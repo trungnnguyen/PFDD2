@@ -1,0 +1,7 @@
+*.o
+*.out
+*.dat
+*.dSYM
+PFDD_Final_GPU
+log
+

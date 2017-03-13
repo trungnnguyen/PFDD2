@@ -1,4 +1,6 @@
 
+ pgcc -Mpreprocess -DACC_NVIDIA=1 -DGPU -DUSE_CUFFT -Minfo=accel -Mcudalib=cufft -ta=tesla:pinned,fastmath -fast -tp=p7 -lrt PFDD_Final_GPU.c -I/usr/local/include -L/usr/local/lib -lfftw3f -lfftw3
+
 COMPILER ?= gcc
 FFT ?= FOURN
 ACC ?= none
@@ -8,7 +10,7 @@ FFTW_INCLUDES := -I$(FFTW_DIR)/include
 FFTW_LIBS := -L$(FFTW_DIR)/lib -lfftw3f
 
 ifeq ($(COMPILER),pgi)
-	CC := pgcc
+	CC := pgcc -Mpreprocess
 #	CFLAGS_WARN := -Minfo=all
 	CFLAGS_OPT := -fast -tp=p7
 	ACC_FLAGS_HOST := -Minfo=accel -ta=host -DGPU
@@ -17,7 +19,7 @@ ifeq ($(COMPILER),pgi)
 else ifeq ($(COMPILER),gcc)
 	CC := gcc
 	CFLAGS_WARN := -Wall
-	CFLAGS_OPT := -O2
+	CFLAGS_OPT := -g -O2
 	ACC_FLAGS_HOST := -fopenacc -DGPU
 else
 $(error unknown COMPILER $(COMPILER))
@@ -29,7 +31,7 @@ ifeq ($(FFT),FFTW)
 else ifeq ($(FFT),FOURN)
 	CFLAGS_FFT := -DUSE_FOURN
 else ifeq ($(FFT),CUFFT)
-	CFLAGS_FFT := -DUSE_CUFFT -Minfo=accel -ta=tesla
+	CFLAGS_FFT := -DUSE_CUFFT -Minfo=accel -ta=tesla:pinned,fastmath
 	LDFLAGS_FFT := -Mcudalib=cufft
 else 
 $(error unknown FFT $(FFT)) 
@@ -49,7 +51,7 @@ else
 $(error unknown ACC $(ACC))
 endif
 
-CFLAGS := -g $(CFLAGS_OPT) $(CFLAGS_WARN) $(CFLAGS_FFT) $(CFLAGS_ACC)
+CFLAGS := $(CFLAGS_OPT) $(CFLAGS_WARN) $(CFLAGS_FFT) $(CFLAGS_ACC)
 LDFLAGS := $(LDFLAGS_ACC) $(LDFLAGS_FFT)
 LOADLIBES := $(LIBS_FFT) -lm
 

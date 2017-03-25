@@ -38,10 +38,10 @@ WTime(void)
 
 
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
-#define NMAT 2     //number of materials, each with defined grain orientation: 1 - homogeneous
-#define N1 512       //N1 dimension
+#define NMAT 1     //number of materials, each with defined grain orientation: 1 - homogeneous
+#define N1 256       //N1 dimension
 #define N2 2        //N2 dimension
-#define N3 512//32   //N3 dimension
+#define N3 256//32   //N3 dimension
 #define NS1 1 //4   /*# of slip systems for each material. 12 number of slip systems for FCC */
 #define NS (NS1*NMAT) //total number of slip systems for all materials
 #define NV 9          /*number of virtual strain systems*/
@@ -2344,7 +2344,8 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
   rcylin=(double)N1/4.0;
   
   t1 = 45./180.*pi;
-  
+  const int Dislocation_End=1;
+  const int Dislocation_Start=5;
   // int NS1 = NS/NMAT;
   //mark
   yita = 2./2./(1-0.34); //for edge
@@ -2392,11 +2393,11 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 		
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==0) {
-		    if(k>0 && k<220)
+		    if(k>0 && k<N3/2-Dislocation_Start)
 		    { 
 		    xi[na0] = 0.0;
 		    }
-		    if(k>220 && k<280)
+		    if(k>k<N3/2-Dislocation_Start && k<N3/2 )
 		    { 
 		    xi[na0] = 1.0;
 		    }
@@ -2424,11 +2425,11 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	      if(iss==0){
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==1) {
-		   if(k>280 && k<340)
+		   if(k>k<N3/2 && k<N3/2+Dislocation_Start)
 		    { 
 		    xi[na0] = 1.0;
 		    }
-		    if(k>340 && k<N3)
+		    if(k>N3/2+Dislocation_Start && k<N3)
 		    { 
 		    xi[na0] = 0.0;
 		    }

@@ -38,17 +38,17 @@ WTime(void)
 
 
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
-#define NMAT 2      //number of materials, each with defined grain orientation: 1 - homogeneous
-#define N1 32       //N1 dimension
+#define NMAT 2     //number of materials, each with defined grain orientation: 1 - homogeneous
+#define N1 512       //N1 dimension
 #define N2 2        //N2 dimension
-#define N3 32//32   //N3 dimension
-#define NS1 2 //4   /*# of slip systems for each material. 12 number of slip systems for FCC */
+#define N3 512//32   //N3 dimension
+#define NS1 1 //4   /*# of slip systems for each material. 12 number of slip systems for FCC */
 #define NS (NS1*NMAT) //total number of slip systems for all materials
 #define NV 9          /*number of virtual strain systems*/
 #define NSV (NS+NV)
 #define ND 3         //3-dimensional
 #define NTD 0//300//100 //4 //0 doesn't evolve dislocations
-#define NT (5+NTD)
+#define NT (1+NTD)
 #define NP 1//21//201
 #define NP2 1
 #define pi 3.141592654
@@ -275,6 +275,7 @@ int main(void){
     void frec (double *, double *, double *, double, double,double);  //frequency subroutine
     void setfcc(double xn[NS][ND], double xb[NS][ND]);                //set slip systems
     void set2D(double xn[NS][ND], double xb[NS][ND]);
+    void set3D1sys(double xn[NS][ND], double xb[NS][ND]);
     void set3D2sys(double xn[NS][ND], double xb[NS][ND]);
     void set3D4sys(double xn[NS][ND], double xb[NS][ND]);
     void setq(double q[N1][N2][N3]);
@@ -322,7 +323,7 @@ int main(void){
     acc_device_t device_type = acc_get_device_type();
     if ( acc_device_nvidia == device_type ) {
       int num_devices=acc_get_num_devices(acc_device_nvidia); 
-      acc_set_device_num(1,acc_device_nvidia); 
+      acc_set_device_num(0,acc_device_nvidia); 
       
       printf("Number Of GPUs %d\n",num_devices);
     }
@@ -374,9 +375,9 @@ int main(void){
     
   /* print files */
     of2 = fopen("stress-strain.dat","w");
-    of3 = fopen("strain.dat","w");
+    of3 = fopen("strain.txt","w");
     of4 = fopen("strain1D.dat","w");
-    of5 = fopen("stress.dat","w");
+    of5 = fopen("stress.txt","w");
     of6 = fopen("stress1D.dat","w");
     of7 = fopen("virtual_strain.dat","w");
     ofrho = fopen("rho.dat","w");
@@ -443,6 +444,8 @@ int main(void){
     C11=168.4E9;//Cu
     C12=121.4E9;
     C44=23.5E9;
+    
+    
     //C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
     //C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
     //C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
@@ -570,8 +573,9 @@ int main(void){
     /*Set the slip systems frequency and matrix BB */	
     
     //set2D(xn,xb);
-    set3D2sys(xn,xb);
+   // set3D2sys(xn,xb);
     
+    set3D1sys(xn,xb);
     seteps(eps, epsv, xn, xb, dslip2,AA,theta1);
     //mark calculate D coefficients for interface evolve
     calculateD4int(a_f, a_s, Cm, theta1, xb, xn, interface_n,&D00, &D01, &D10, &D11,&lam1,&lam2,&stressthreshold);
@@ -1875,7 +1879,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	
 	if(it == NT-NTD-1){
         printf("printing strains %d %d\n",it, itp);
-		fprintf(of3,"zone   I = %d J = %d K = %d \n", N1, N2,N3);
+	//	fprintf(of3,"zone   I = %d J = %d K = %d \n", N1, N2,N3);
+	 	fprintf(of3,"x,y,z,eps11,eps13,eps21,eps22,eps23,eps31,eps32,eps33\n");
 		for(k1=0;k1<N1;k1++){
 			for(k2=0;k2<N2;k2++){
 				for(k3=0;k3<N3;k3++){
@@ -1890,7 +1895,7 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 					na32 = na0 + 2*(2*N1*N2*N3+1*N1*N2*N3*ND) ;
 					na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
 					
-					fprintf(of3,"%d %d %d %lf %lf %lf %lf %lf %lf %lf %lf %lf \n",k1,k2,k3, dataeps[na11+1], dataeps[na12+1], dataeps[na13+1],dataeps[na21+1], dataeps[na22+1], dataeps[na23+1],dataeps[na31+1], dataeps[na32+1], dataeps[na33+1]);
+					fprintf(of3,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf \n",k1,k2,k3, dataeps[na11+1], dataeps[na12+1], dataeps[na13+1],dataeps[na21+1], dataeps[na22+1], dataeps[na23+1],dataeps[na31+1], dataeps[na32+1], dataeps[na33+1]);
                 }
 			}
 		}
@@ -1993,7 +1998,8 @@ void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, 
 
     if (it == NT-1 && itp == NP-1) {
         printf("printing stress %d %d\n",it, itp);
-        fprintf(of5,"zone   I = %d K = %d \n", N3,N1);
+    //    fprintf(of5,"zone   I = %d K = %d \n", N3,N1);
+    fprintf(of5,"x,y,z,sigma11,sigma12,sigma13,sigma22,sigma23,sigma33,datasigma11,datasigma12,datasigma13,datasigma22,datasigma23,datasigma33 \n");
         for(k1=0;k1<N1;k1++){
             for(k2=0;k2<N2;k2++){
                 for(k3=0;k3<N3;k3++){
@@ -2009,7 +2015,7 @@ void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, 
                     na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
                     
                     if (k2==0) {
-                        fprintf(of5,"%d %d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",k3,k1,sigmav[na11], sigmav[na12], sigmav[na13],sigmav[na22], sigmav[na23], sigmav[na33],datasigma[na11+1], datasigma[na12+1], datasigma[na13+1],datasigma[na22+1], datasigma[na23+1],datasigma[na33+1]);
+                        fprintf(of5,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",k1,k2,k3,sigmav[na11], sigmav[na12], sigmav[na13],sigmav[na22], sigmav[na23], sigmav[na33],datasigma[na11+1], datasigma[na12+1], datasigma[na13+1],datasigma[na22+1], datasigma[na23+1],datasigma[na33+1]);
                     }
                 }
             }
@@ -2386,11 +2392,18 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 		
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==0) {
+		    if(k>0 && k<220)
+		    { 
+		    xi[na0] = 0.0;
+		    }
+		    if(k>220 && k<280)
+		    { 
 		    xi[na0] = 1.0;
+		    }
 		  }                 
 		}           
 	      }
-	      if (iss==1) {
+	    /*  if (iss==1) {
 		if (i==ppoint_x) {
 		  
 		  if (k>=ppoint_z-40&&k<ppoint_z-3) {
@@ -2403,6 +2416,7 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
                   
 		}
 	      }
+	     */ 
 	    }
 	    
 	    //2nd material
@@ -2410,15 +2424,22 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	      if(iss==0){
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==1) {
+		   if(k>280 && k<340)
+		    { 
 		    xi[na0] = 1.0;
+		    }
+		    if(k>340 && k<N3)
+		    { 
+		    xi[na0] = 0.0;
+		    }
 		  }
-		  if ((xi_o[nao]==1 && xi_o[k-1+(j)*N3+(i)*N3*N2]==0) &&(k!=0&&i!=0)) {
+		/*  if ((xi_o[nao]==1 && xi_o[k-1+(j)*N3+(i)*N3*N2]==0) &&(k!=0&&i!=0)) {
 		    #ifndef _OPENACC
 		    printf("residual here, i=%d, j=%d, k=%d,is=%d\n",i,j,k,is);
 		    #endif
 		    xi[na0] = 0.4737370342414563;//Cu/Ni  0.9716099719347492;//Au/Ag  1.0292195725507935;//Ag/Au  2.110875713152033;//Ni/Cu   0.483474845511;//Al/Pt  2.068359934927055;//Pt/Al
                     
-		  }
+		  } */
 		}
 	      }
 	      if (iss==1) {
@@ -2780,6 +2801,59 @@ void set2D(double xn[NS][ND], double xb[NS][ND])
   
   printf("Burgers vector b = (%lf , %lf , %lf )\n", xb[0][0],xb[0][1], xb[0][2]);	
   printf("Slip plane     n = [%lf,  %lf , %lf ]\n", xn[0][0],xn[0][1], xn[0][2]);
+  return;
+}
+
+void set3D1sys(double xn[NS][ND], double xb[NS][ND])
+{
+	 
+	
+	int is;
+	for(is=0;is<NS;is+=NS1){
+	#if 0  
+		//for screw case:
+		
+        xn[is][0]=sqrt(3)/3.;
+        xn[is][1]=sqrt(3)/3.;
+        xn[is][2]=sqrt(3)/3.;
+        
+        xb[is][0]=-sqrt(2)/2.;
+        xb[is][1]=sqrt(2)/2.;
+        xb[is][2]=0.0;
+	#else
+              //for edge case:
+	      
+	xn[is][0]=sqrt(3)/3.;
+        xn[is][1]=sqrt(3)/3.;
+        xn[is][2]=sqrt(3)/3.;      
+	      
+	xb[is][0]=1/sqrt(6.);
+        xb[is][1]=1/sqrt(6.);
+        xb[is][2]=-2/sqrt(6.);
+              
+	#endif      
+        
+        //for mixed type case:
+        //xn[is][0]=sqrt(3)/3.;
+        //xn[is][1]=sqrt(3)/3.;
+        //xn[is][2]=sqrt(3)/3.;
+        
+        //xb[is][0]=-sqrt(2)/2.;
+        //xb[is][1]=0.0;
+        //xb[is][2]=sqrt(2)/2.;
+        
+        //xn[is+1][0]=sqrt(3)/3.;
+        //xn[is+1][1]=sqrt(3)/3.;
+        //xn[is+1][2]=sqrt(3)/3.;
+        
+        //xb[is+1][0]=-sqrt(2)/2.;
+        //xb[is+1][1]=0.0;
+        //xb[is+1][2]=sqrt(2)/2.;
+	}
+  
+  printf("Burgers vector b1 = (%lf , %lf , %lf )\n", xb[0][0],xb[0][1], xb[0][2]);
+  printf("Burgers vector b2 = (%lf , %lf , %lf )\n", xb[1][0],xb[1][1], xb[1][2]);
+  printf("Slip plane     n  = [%lf,  %lf , %lf ]\n", xn[0][0],xn[0][1], xn[0][2]);
   return;
 }
 
@@ -3489,6 +3563,9 @@ void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND], doub
 void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z){
   
   int i,j,k,na,ir[9],l,check;
+  FILE *MatType;
+  MatType = fopen("Material_Type.txt","w");
+  fprintf(MatType,"x,y,z,Material_Type\n");
   check = 0;
   (*d_f)=(double)(N3-border-1);
   (*d_s)=(double)(border);
@@ -3501,7 +3578,7 @@ void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_
 	if((interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z))>0 && NMAT>=1){
 	  xi_o[na] = 1;
 	}
-	
+	fprintf(MatType,"%d,%d,%d,%d\n",i, j, k, xi_o[na]);
       }
     }
   }
@@ -3548,12 +3625,12 @@ void setMat(double C[NMAT][3], double S[NMAT][3],double b2[NS],double dslip2[NS]
       }
     }
     else if(na==1){
-      lC11 = 246.5E9; //Ni
-      lC12 = 147.3E9;
-      lC44 = 49.6E9;
-      //lC11=168.4E9;//Cu
-      //lC12=121.4E9;
-      //lC44=23.5E9;
+   //   lC11 = 246.5E9; //Ni
+   //   lC12 = 147.3E9;
+   //   lC44 = 49.6E9;
+      lC11=168.4E9;//Cu
+      lC12=121.4E9;
+      lC44=23.5E9;
       //lC11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
       //lC12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High92.E9;//Ag_Low
       //lC44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High15.E9;//Ag_Low
@@ -4967,7 +5044,7 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
 	  for (v=0; v<ND; v++) {
 	    sigma[i][j][k][u][v] = 0.0;
 	    if ((u==0&&v==1) || (u==1&&v==0)) {//Original tau_crit: CuNi: 0.101, NiCu: 0.106, AlPt: 0.106, PtAl: 0.106
-	      sigma[i][j][k][u][v] = 0.4;//n:0.102   p:
+	      sigma[i][j][k][u][v] = 0.0;//n:0.102   p:
 	    }
 	    if (u==2&&v==2) {
 	      //sigma[i][j][k][u][v] = 0.02;
@@ -4982,8 +5059,8 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
 	  else {
 	    na = 1;
 	  }
-	  sigma_temp[0][0] = (-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
-	  sigma_temp[1][1] = (-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
+	  sigma_temp[0][0] = 0.0;//(-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
+	  sigma_temp[1][1] = 0.0;//(-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
           
 	  for (m=0; m<ND; m++) {
 	    for (n=0; n<ND; n++) {

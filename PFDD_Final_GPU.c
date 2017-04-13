@@ -38,10 +38,11 @@ WTime(void)
 
 
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
-#define NMAT 1     //number of materials, each with defined grain orientation: 1 - homogeneous
-#define N1 256       //N1 dimension
-#define N2 2        //N2 dimension
-#define N3 256//32   //N3 dimension
+#define NMAT 2     //number of materials, each with defined grain orientation: 1 - homogeneous
+#define N1 1024       //N1 dimension
+#define N2 2   
+     //N2 dimension
+#define N3 1024//32   //N3 dimension
 #define NS1 1 //4   /*# of slip systems for each material. 12 number of slip systems for FCC */
 #define NS (NS1*NMAT) //total number of slip systems for all materials
 #define NV 9          /*number of virtual strain systems*/
@@ -251,8 +252,8 @@ int main(void){
     int checkvirtual;
     int isa, isb;
     int  nad1, nad2, psys ;
-    double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
-    double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
+   static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
+   static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
     double *fx, *fy, *fz, *slr, *sli, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
     float *_data, *_data2, *_datag, *_databeta;
     float *data, *datag, *databeta, *dataeps, *dataepsd, *datasigma, *sigmav;
@@ -467,8 +468,8 @@ int main(void){
 	
     b = 0.256E-9;
     dslip = 1.0;//4.0;//1.0;//N1/4/sqrt(3.0); /* in units of b*/
-    //a_f = 0.361E-9; //for Cu
-    a_f = 0.352E-9; //for Ni
+    a_f = 0.361E-9; //for Cu
+    //a_f = 0.352E-9; //for Ni
     //a_f = 0.392E-9; //for Pt
     //a_f = 0.408E-9; //for Au
     //a_f = 0.405E-9; //for Al
@@ -591,8 +592,10 @@ int main(void){
     printf("Set interaction matrix\n");
     Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, C11, C12, C44, xi_o);
     Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  C11,  C12,  C44, xi_o,theta1);
+     printf("HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX\n");
+//     getchar();
     Gmatrix (GG, beta2, xb, xn, fx, fy, fz);
- 
+    printf("HERE WE ARE AFTER CALLING THE GMATRIX\n");  
   
   
     /*#ifdef GPU
@@ -1327,7 +1330,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
   double  fkr;
   double C[ND][ND][ND][ND];
   float A[ND][ND][ND][ND];
-  float B[NS][NSV][N1][N2][N3];
+  static float B[NS][NSV][N1][N2][N3];
   float G[ND][ND];
   double fk[ND], z2[ND];
   double xnu, ll, mu, mup, young, fk2, fk4,kk;
@@ -1431,15 +1434,19 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
   int i,j,k,l,m,n, u, v, k1,k2,k3,ka, nv, nb, nfreq;
   int is, js, ks;
   double  fkr;
-  double C[ND][ND][ND][ND];
-  float F[NS][ND][ND], Fv[NV][ND][ND];
-  float D[NSV][ND][ND];
-  float G[ND][ND];
-  double fk[ND], z2[ND];
-  double xnu, ll, mu, mup, young, fk2, fk4,kk;
-  float A[ND][ND][ND][ND];
-  double C_rotate[ND][ND][ND][ND];
+   
   
+  static double C[ND][ND][ND][ND];
+  static float F[NS][ND][ND], Fv[NV][ND][ND];
+  static float D[NSV][ND][ND];
+  static float G[ND][ND];
+  static double fk[ND], z2[ND];
+  double xnu, ll, mu, mup, young, fk2, fk4,kk;
+  static float A[ND][ND][ND][ND];
+  static double C_rotate[ND][ND][ND][ND];
+  
+//  printf("Here:line 1447\n");
+
   for (i=0; i<ND; i++) {
     for (j=0; j<ND; j++) {
       for (k=0; k<ND; k++) {
@@ -1449,6 +1456,10 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
       }
     }
   }
+  
+//  printf("Here:line 1457\n");
+  
+  
   	
   //	mu = C44-(2.0*C44+C12-C11)/5.0;
   //	ll = C12-(2.0*C44+C12-C11)/5.0;
@@ -1473,7 +1484,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
       }
     }
   }
-  
+//    printf("Here:line 1484");
   //Rotate C for material 0 due to orientation
   for (i=0; i<ND; i++) {
     for (j=0; j<ND; j++) {
@@ -1498,7 +1509,8 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
     }
   }
     
- 	
+// printf("Here:line 1509");	
+ 
   for(k1=0;k1<N1;k1++) {
     for(k2=0;k2<N2;k2++) {
       for(k3=0;k3<N3;k3++){
@@ -1523,7 +1535,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	  z2[1] = fk[1]*fk[1]/fk2;
 	  z2[2] = fk[2]*fk[2]/fk2;
 	  kk  = 1.0 + (mu+ll) * (1/(mu+mup*z2[0])*z2[0] + 1/(mu+mup*z2[1])*z2[1] + 1/(mu+mup*z2[2])*z2[2]);
-	  
+//	  printf("Here:line 1535");
 	  for (m=0; m<ND; m++) {
 	    for (n=0; n<ND; n++) {
 	      for (u=0; u<ND; u++) {
@@ -1546,7 +1558,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	      }
 	    }
 	  }
-	  
+//	  printf("Here:line 1558");
 	  //				} /*if fk2 */		
 	  
 	  for (ka=0; ka<NSV; ka++) {
@@ -1579,6 +1591,8 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	      }
 	    }
 	  }
+	  
+//	  printf("Here:line 1592");
 	} /*if fk2 */			
 	for (ka=0; ka<NSV; ka++) {
 	  for (i=0; i<ND; i++) {
@@ -1597,7 +1611,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	    }
 	  }
 	}
-	
+//	printf("Here:line 1611");
 	
       }/*k3*/
     }/*k2*/	
@@ -1609,7 +1623,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
   
   int i,j,k,l,m,k1,k2,k3,ka,kb,nb,nfreq;
   double fk[ND];
-  double G2[NS][NS][N1][N2][N3];
+  static double G2[NS][NS][N1][N2][N3];
   int ep[ND][ND][ND];
   
   for(i=0;i<ND;i++){
@@ -2345,13 +2359,20 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
   
   t1 = 45./180.*pi;
   const int Dislocation_End=1;
-  const int Dislocation_Start=5;
+  const int Dislocation_Start=256;
   // int NS1 = NS/NMAT;
   //mark
   yita = 2./2./(1-0.34); //for edge
   //   yita = 0.5 * 2.; //for screw *2 ~~d = 2b
   
-  
+   
+         
+  FILE *Order_Param1;
+  Order_Param1 = fopen("Order_Parameter1.txt","w");
+  fprintf(Order_Param1,"x,y,z,Order_Parameter\n");
+  FILE *Order_Param2;
+  Order_Param2 = fopen("Order_Parameter2.txt","w");
+  fprintf(Order_Param2,"x,y,z,Order_Parameter\n");
   #ifdef GPUU  
   #pragma acc data copy(data[0:2*(NSV)*(N1)*(N2)*(N3)],xi[0:2*(NSV)*(N1)*(N2)*(N3)-1],xi_bc[0:2*(NSV)*(N1)*(N2)*(N3)-1],data_CUFFT[0:(NSV)*(N1)*(N2)*(N3)][0:1]) copyin(xi_o[0:(N1)*(N2)*(N3)])  
    
@@ -2393,11 +2414,13 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 		
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==0) {
-		    if(k>0 && k<N3/2-Dislocation_Start)
+//		    if(k>0 && k<N3/4)
+                    if(k>0 && k<768) 
 		    { 
 		    xi[na0] = 0.0;
 		    }
-		    if(k>k<N3/2-Dislocation_Start && k<N3/2 )
+//		    if(k>=N3/4 && k<N3/2 )
+                    if(k>=768 && k<1024 )
 		    { 
 		    xi[na0] = 1.0;
 		    }
@@ -2418,6 +2441,8 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 		}
 	      }
 	     */ 
+	    fprintf(Order_Param1,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
+	     
 	    }
 	    
 	    //2nd material
@@ -2425,11 +2450,13 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	      if(iss==0){
 		if (i==ppoint_x+0) {
 		  if (xi_o[nao]==1) {
-		   if(k>k<N3/2 && k<N3/2+Dislocation_Start)
+//		   if(k>=N3/2 && k<3*N3/4)
+                    if(k>=1024 && k<1280)
 		    { 
 		    xi[na0] = 1.0;
 		    }
-		    if(k>N3/2+Dislocation_Start && k<N3)
+//		    if(k>=3*N3/4 && k<N3)
+                    if(k>=1280 && k<2048)
 		    { 
 		    xi[na0] = 0.0;
 		    }
@@ -2452,6 +2479,7 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
                   
 		}
 	      }
+	      fprintf(Order_Param2,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
 	    }
 	    
 	    
@@ -2506,10 +2534,20 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	  }
 	}
       }
+      
+        
+      
+		     
+		 
+		  
+      
+      
     }
     
     
   }
+  
+  
   
   #ifdef GPUU 
   } //#pragma acc kernels
@@ -3576,7 +3614,8 @@ void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_
       for(k=0;k<N3;k++){
 	na = k+j*N3+i*N2*N3;
 	xi_o[na] = 0;
-	if((interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z))>0 && NMAT>=1){
+//	if((interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z))>0 && NMAT>=1){
+        if(k>=N3/2){
 	  xi_o[na] = 1;
 	}
 	fprintf(MatType,"%d,%d,%d,%d\n",i, j, k, xi_o[na]);
@@ -4201,16 +4240,16 @@ float Energy_calculation(double *fx, double *fy, double *fz, double eps[NS][ND][
 	
 	int i,j,k,l,m,n, u, v, k1,k2,k3,nfreq,index,u_p[NS],v_p[NS];
 	double C[ND][ND][ND][ND];
-	float strainv_real[ND][ND][N1][N2][N3];
-    float strainv_imag[ND][ND][N1][N2][N3];
-    float strainp_real[NS][ND][ND][N1][N2][N3];
-    float strainp_imag[NS][ND][ND][N1][N2][N3];
+	static float strainv_real[ND][ND][N1][N2][N3];
+   static float strainv_imag[ND][ND][N1][N2][N3];
+  static  float strainp_real[NS][ND][ND][N1][N2][N3];
+  static  float strainp_imag[NS][ND][ND][N1][N2][N3];
 	float G[ND][ND];
 	double fk[ND];
 	double ll, mu, mup, fk2, fk4;
     float en;
-	float A[N1][N2][N3][ND][ND][ND][ND];
-    float E_real[N1][N2][N3];
+static	float A[N1][N2][N3][ND][ND][ND][ND];
+static    float E_real[N1][N2][N3];
     //    float E_imag[N1][N2][N3];
 
     static double acc_time;

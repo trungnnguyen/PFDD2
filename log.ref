@@ -1,0 +1,295 @@
+This is an isotropic material.
+Material constants for material 0
+C11 = 1.684000e+11, C12 = 1.214000e+11, C44 = 2.350000e+10Material constants for material 1
+C11 = 1.684000e+11, C12 = 1.214000e+11, C44 = 2.350000e+10This is an isotropic material.
+core energy C = 0.038899 
+Amatrix for material 0
+
+
+
+Amatrix for material 1
+1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+mup is 0.000000e+00
+Amatrix for material 0
+
+
+
+in dSmat check: cp[0][0][0][0] for material 0 is 1.684000e+11
+in dSmat check: cp[0][0][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][1][1] for material 0 is 1.214000e+11
+in dSmat check: cp[0][0][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][0][2][2] for material 0 is 1.214000e+11
+in dSmat check: cp[0][1][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][0][1] for material 0 is 2.350000e+10
+in dSmat check: cp[0][1][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][1][0] for material 0 is 2.350000e+10
+in dSmat check: cp[0][1][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][1][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][0][2] for material 0 is 2.350000e+10
+in dSmat check: cp[0][2][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][2][0] for material 0 is 2.350000e+10
+in dSmat check: cp[0][2][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[0][2][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][0][1] for material 0 is 2.350000e+10
+in dSmat check: cp[1][0][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][1][0] for material 0 is 2.350000e+10
+in dSmat check: cp[1][0][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][0][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][0][0] for material 0 is 1.214000e+11
+in dSmat check: cp[1][1][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][1][1] for material 0 is 1.684000e+11
+in dSmat check: cp[1][1][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][1][2][2] for material 0 is 1.214000e+11
+in dSmat check: cp[1][2][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][1][2] for material 0 is 2.350000e+10
+in dSmat check: cp[1][2][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[1][2][2][1] for material 0 is 2.350000e+10
+in dSmat check: cp[1][2][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][0][2] for material 0 is 2.350000e+10
+in dSmat check: cp[2][0][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][2][0] for material 0 is 2.350000e+10
+in dSmat check: cp[2][0][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][0][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][0][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][1][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][1][2] for material 0 is 2.350000e+10
+in dSmat check: cp[2][1][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][1][2][1] for material 0 is 2.350000e+10
+in dSmat check: cp[2][1][2][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][0][0] for material 0 is 1.214000e+11
+in dSmat check: cp[2][2][0][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][0][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][1][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][1][1] for material 0 is 1.214000e+11
+in dSmat check: cp[2][2][1][2] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][2][0] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][2][1] for material 0 is 0.000000e+00
+in dSmat check: cp[2][2][2][2] for material 0 is 1.684000e+11
+Material 0 has dCij
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+mup is 0.000000e+00
+Amatrix for material 1
+1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+in dSmat check: cp[0][0][0][0] for material 1 is 1.684000e+11
+in dSmat check: cp[0][0][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][1][1] for material 1 is 1.214000e+11
+in dSmat check: cp[0][0][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][0][2][2] for material 1 is 1.214000e+11
+in dSmat check: cp[0][1][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][0][1] for material 1 is 2.350000e+10
+in dSmat check: cp[0][1][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][1][0] for material 1 is 2.350000e+10
+in dSmat check: cp[0][1][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][1][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][0][2] for material 1 is 2.350000e+10
+in dSmat check: cp[0][2][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][2][0] for material 1 is 2.350000e+10
+in dSmat check: cp[0][2][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[0][2][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][0][1] for material 1 is 2.350000e+10
+in dSmat check: cp[1][0][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][1][0] for material 1 is 2.350000e+10
+in dSmat check: cp[1][0][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][0][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][0][0] for material 1 is 1.214000e+11
+in dSmat check: cp[1][1][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][1][1] for material 1 is 1.684000e+11
+in dSmat check: cp[1][1][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][1][2][2] for material 1 is 1.214000e+11
+in dSmat check: cp[1][2][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][1][2] for material 1 is 2.350000e+10
+in dSmat check: cp[1][2][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[1][2][2][1] for material 1 is 2.350000e+10
+in dSmat check: cp[1][2][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][0][2] for material 1 is 2.350000e+10
+in dSmat check: cp[2][0][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][2][0] for material 1 is 2.350000e+10
+in dSmat check: cp[2][0][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][0][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][0][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][1][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][1][2] for material 1 is 2.350000e+10
+in dSmat check: cp[2][1][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][1][2][1] for material 1 is 2.350000e+10
+in dSmat check: cp[2][1][2][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][0][0] for material 1 is 1.214000e+11
+in dSmat check: cp[2][2][0][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][0][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][1][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][1][1] for material 1 is 1.214000e+11
+in dSmat check: cp[2][2][1][2] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][2][0] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][2][1] for material 1 is 0.000000e+00
+in dSmat check: cp[2][2][2][2] for material 1 is 1.684000e+11
+Material 1 has dCij
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 
+Material 1 is considered the same as material 0. 
+KK for material 1
+-1.684000e+11 -1.214000e+11 -1.214000e+11 0.000000e+00 0.000000e+00 0.000000e+00 
+-1.214000e+11 -1.684000e+11 -1.214000e+11 0.000000e+00 0.000000e+00 0.000000e+00 
+-1.214000e+11 -1.214000e+11 -1.684000e+11 0.000000e+00 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 -2.350000e+10 0.000000e+00 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 -2.350000e+10 0.000000e+00 
+0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 -2.350000e+10 
+Burgers vector b1 = (0.408248 , 0.408248 , -0.816497 )
+Burgers vector b2 = (0.408248 , 0.408248 , -0.816497 )
+Slip plane     n  = [0.577350,  0.577350 , 0.577350 ]
+strainsys (0) 
+1.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+strainsys (1) 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+strainsys (2) 
+0.000000 0.000000 1.000000 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+strainsys (3) 
+0.000000 0.000000 0.000000 
+1.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+strainsys (4) 
+0.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 0.000000 
+strainsys (5) 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 1.000000 
+0.000000 0.000000 0.000000 
+strainsys (6) 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+1.000000 0.000000 0.000000 
+strainsys (7) 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+strainsys (8) 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+0.000000 0.000000 1.000000 
+Eps0 for slip system 0 
+-0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+-1.000000 0.000000 0.000000 
+Eps0 for slip system 1 
+-0.000000 0.000000 0.000000 
+0.000000 0.000000 0.000000 
+-1.000000 0.000000 0.000000 
+in calculateD4int check:  in material 0 coordinates:
+b0[0] = 0.000000, b1[0] = 0.333333, interface_n_rotate[0] = 0.577350
+in calculateD4int check:  in material 0 coordinates:
+b0[1] = 0.000000, b1[1] = 0.000000, interface_n_rotate[1] = 0.000000
+in calculateD4int check:  in material 0 coordinates:
+b0[2] = -1.000000, b1[2] = 0.471405, interface_n_rotate[2] = 0.816497
+check D coefficients: D10 = 0.000000e+00, D01 = -4.617832e+00, D00 = 4.897951e+00, D11 = 0.000000e+00
+check lambda1 and lambda2 and stressthreshold: lam1 = -inf, lam2 = nan all xi0/xi1 and stressthreshold = xi_0* inf
+energy barrier = inf   delta = 21.324377
+D00 = 4.897951e+00, D11 = 0.000000e+00, D10 = 0.000000e+00, D01 = -4.617832e+00
+Frequencies
+Set interaction matrix
+set B matrix 
+set F matrix 
+HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX
+HERE WE ARE AFTER CALLING THE GMATRIX
+ Generating initial data
+initial data for system 0
+initial data for system 1
+initial data for system 2
+initial data for system 3
+initial data for system 4
+initial data for system 5
+initial data for system 6
+initial data for system 7
+initial data for system 8
+initial data for system 9
+initial data for system 10
+0start time step 
+E[0]=66688750862.663910,miu[0]=0.418910, C_effective[0] = 114764845605.700714
+E[1]=66688750862.663910,miu[1]=0.418910, C_effective[1] = 114764845605.700714
+max misfit stress is 0.000000
+max resolved shear stress is 0.000000Resolved shear stresses
+time step, 0 0 0
+xi = 0.000000e+00
+printing strains 0 0
+go till here!!!
+printing stress 0 0
+en 0
+vflag 0, time 0 
+wall time 0.346170s

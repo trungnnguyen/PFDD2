@@ -246,32 +246,31 @@ float minimum(float a[9]);
 float maximum(float a[9]);
 
 int main(void){
-    int i, j, k, l, m, n, ksym, it, it_plastic, it_countint,itp, itp2, is,is2,id, ka, kb, nb, na, nsa, iis, nf[4],na0, na1, na2, nsize, k1, k2, k3,  nfreq, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+    int i, j, k, it, it_plastic, itp, itp2, is, nb, na, nf[4],na0, na1, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
     int * pcountgamma;
     int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
     int checkvirtual;
     int isa, isb;
-    int  nad1, nad2, psys ;
+    int  nad1, nad2;
    static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
    static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
-    double *fx, *fy, *fz, *slr, *sli, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
+    double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
     float *_data, *_data2, *_datag, *_databeta;
     float *data, *datag, *databeta, *dataeps, *dataepsd, *datasigma, *sigmav;
     double *f, *r;
-    double L, d1, d2, d3, dt, size,size3,ir,beta2;
-    double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, young, nu,ll, mup, gs,gs3,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
+    double d1, d2, d3, size3,ir,beta2;
+    double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
     double *BB;
     double *FF;
     double *DD;
     double *GG;
     double *FFv;
-    int ic1, ic2, ic3, ic4;
-    int Rv,sizexi,sizexi_bc,countenergy,countstrain;
-    double setobs, setsigma, sigstep, gamma, gamma1[NS], testeps, gammalast;
-    float uq1, uq2,energy_in,energy_last,energy_in2,energy_in3,energy_in4,energy_intotal,strain_average,strain_last,energy_Residual,energy_intotal_z[25];
-    int flagp=0;
+    int Rv = 0,sizexi,sizexi_bc,countenergy,countstrain;
+    double setobs, gamma, gamma1[NS], gammalast;
+    float uq2,energy_in,energy_last,energy_in2,energy_in3,energy_in4,energy_intotal,strain_average,strain_last,energy_Residual;
+    //    float energy_intotal_z[25];
     double theta1[NMAT][ND][ND], Cm[NMAT][3], Sm[NMAT][3], KK[NMAT][6][6], *II, AA[NMAT][ND][ND], dS[NMAT][6][6]; //Cm[0]: C11, Cm[1]: C12, Cm[2]: C44.
-    int *xi_o, nao, ZLdC[NMAT][6],prop[NMAT][6];
+    int *xi_o, ZLdC[NMAT][6],prop[NMAT][6];
     
     void frec (double *, double *, double *, double, double,double);  //frequency subroutine
     void setfcc(double xn[NS][ND], double xb[NS][ND]);                //set slip systems
@@ -314,7 +313,8 @@ int main(void){
     float Imatrix(double *, double *, double KK[NMAT][6][6], double, double, double, int *,float,double interface_n[ND],int,int,int);
     void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[NMAT][3],int,int,int,int,double interface_n[ND]);
     
-    FILE *of2, *of3, *of4, *of5, *of6, *of7, *ofrho,*ofxi,*ofxi_bc, *ofxi1, *ofxi_bc1,*ofEnergy,*ofFinalXi,*ofFinalXi_w,*ofpfv, *ofpfout, *ofresidual,*ofcheckEbarrier,*ofzEdensity;
+    FILE *of2, *of3, *of4, *of5, *of6, *of7, *ofrho,*ofxi,*ofxi_bc, *ofxi1, *ofxi_bc1,*ofEnergy,*ofFinalXi_w,*ofpfv, *ofpfout, *ofresidual,*ofcheckEbarrier,*ofzEdensity;
+    //    FILE *ofFinalXi;
   
   /* data is offset by one respect to xi due to offset in fourn
      data goes to fft and is repalced by its fft
@@ -331,8 +331,6 @@ int main(void){
 #endif 
      
     double tmstart = WTime();
-    double acc_time = 0;
-    int acc_n = 0;
        
     sizexi = 2*(NSV)*(N1)*(N2)*(N3);
     sizexi_bc = 2*(NSV)*(N1)*(N2)*(N3);
@@ -420,12 +418,12 @@ int main(void){
     }
     
     setobs = 0.05;//0.30; //set random obstacle density
-    setsigma = 0.000;//1.0E-2;//3E-3;//1.5E-1;//1.5E-3;//0.25;//0.3;//0.5/10;//0.7;//0.002;//0.001;//1.0;//0.04;//0.005;//1.0;//0.01; //2.3E-3;  //set stress
-    sigstep = 0.00;//1.0E-2;//0.0002; //set stress increment
+    //double setsigma = 0.000;//1.0E-2;//3E-3;//1.5E-1;//1.5E-3;//0.25;//0.3;//0.5/10;//0.7;//0.002;//0.001;//1.0;//0.04;//0.005;//1.0;//0.01; //2.3E-3;  //set stress
+    //double sigstep = 0.00;//1.0E-2;//0.0002; //set stress increment
     gamma = 0.0;
     gammalast = 0.0;
   
-    uq1=1.0/3.0;
+    //float uq1=1.0/3.0;
     uq2=1.0;
     
     /* set # of time steps between virtualstrain evolve and phase field evolve */
@@ -514,16 +512,16 @@ int main(void){
     
     
     mu = C44;//C44-(2.0*C44+C12-C11)/5.0;
-    ll = C12;//C12-(2.0*C44+C12-C11)/5.0;
-    mup= C11-C12-2*C44;
-    young = mu*(3*ll+2*mu)/(ll+mu);
-    nu = young/2.0/mu-1.0;
+    //double ll = C12;//C12-(2.0*C44+C12-C11)/5.0;
+    //double mup= C11-C12-2*C44;
+    //double young = mu*(3*ll+2*mu)/(ll+mu);
+    //double nu = young/2.0/mu-1.0;
     
     S11 = 1./3.*(1/(C11+2*C12) + 2/(C11-C12));
     S12 = 1./3.*(1/(C11+2*C12) - 1/(C11-C12));
     S44 = 1/C44;
     
-    L = (double)(N3);
+    //double L = (double)(N3);
 	
     nf[0]=N1;
     nf[1]=N1;
@@ -536,17 +534,18 @@ int main(void){
     d3 = 1;//10.0;
     
     gs = b2[0]*d1;  /*grid size*/
-    gs3=gs*gs*gs;
 
-    size = L*gs;
+    //double size = L*gs;
     size3 = b2[0]*b2[0]*b2[0]*N1*N2*N3*d1*d2*d3;
     for(is=0;is<NS;is++){
       Asf2[is] = 0.0262;//the constant C in the code is C = Asf * C44 *dslip*b //
     }
     Asf2[0] = 0.0064659518668288441;
     Asf2[1] = 0.0064659518668288441;
-    Asf2[2] = 0.013307048604153731;
-    Asf2[3] = 0.013307048604153731;
+    if (NS == 4) {
+      Asf2[2] = 0.013307048604153731;
+      Asf2[3] = 0.013307048604153731;
+    }
     // for Cu, B = 0.1519499J/m^2, for Ni, B = 0.3127156J/m^2, don't forget normalize by C44
     // normalized by C44_Ni, B_cu = 0.003063505420775763, B_ni = 0.0063047508507583193
     // normalized by C44_Cu, B_cu = 0.0064659518668288441, B_ni = 0.013307048604153731
@@ -762,8 +761,6 @@ int main(void){
 	  energy_in4 = 0.0;
 	  strain_average = 0.0;
           
-	  testeps = 0.0;
-          
 	  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
 	  energy_in2 = Imatrix(II, xi, KK, C11, C12, C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
             
@@ -891,7 +888,9 @@ int main(void){
 	    for(i=0;i<N1;i++){
 	      for(j=0;j<N2;j++){
 		for(k=0;k<N3;k++){
-		  int xleft, xright, yleft, yright, zleft, zright,dx,naxright,naxleft,nayright,nayleft,nazright,nazleft;
+		  int xleft, xright, yleft, yright, zleft, zright,dx,naxright,naxleft,nayright,nayleft;
+#if 0 // avoid warning
+		  int nazright,nazleft;
 		  double dxi_x, dxi_y, dxi_z;
 		  double e1[ND], e2[ND];
 		  e1[0]=-1.0/sqrt(2.0);
@@ -900,6 +899,7 @@ int main(void){
 		  e2[0]=-1.0/sqrt(6.0);
 		  e2[1]=-1.0/sqrt(6.0);
 		  e2[2]=2.0/sqrt(6.0);
+#endif
 		  dx = 2;
 		  xright = i+dx/2;
 		  xleft = i-dx/2;
@@ -919,13 +919,17 @@ int main(void){
 		    naxleft = 2*(k+j*N3+xleft*N2*N3+is*N1*N2*N3);
 		    nayright = 2*(k+yright*N3+i*N2*N3+is*N1*N2*N3);
 		    nayleft = 2*(k+yleft*N3+i*N2*N3+is*N1*N2*N3);
+#if 0 // avoid warning
 		    nazright = 2*(zright+j*N3+i*N2*N3+is*N1*N2*N3);
 		    nazleft = 2*(zleft+j*N3+i*N2*N3+is*N1*N2*N3);
+#endif
 		    ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 		    if(ir<(double)((N1/4-1)*(N1/4-1))){
+#if 0 // avoid warning
 		      dxi_x=(xi[naxright]-xi[naxleft])/dx;
 		      dxi_y=(xi[nayright]-xi[nayleft])/dx;
 		      dxi_z=(xi[nazright]-xi[nazleft])/dx;
+#endif
 		      rho2[is] += sqrt((xi[naxright]-xi[naxleft])*(xi[naxright]-xi[naxleft])/(dx*dx)+(xi[nayright]-xi[nayleft])*(xi[nayright]-xi[nayleft])/(dx*dx))*(gs*gs)/size3/gs;
 		    }
 		  }
@@ -1325,24 +1329,22 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
   printf("set B matrix \n");
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,n, u, v, k1,k2,k3,ka,kb,kam,kas,kbm,kbs, nv, nb, nfreq;
-  int is, js, ks;
-  double  fkr;
+  int i,j,k,l,m,n, u, v, k1,k2,k3,ka,kb, nb, nfreq;
   double C[ND][ND][ND][ND];
   float A[ND][ND][ND][ND];
   static float B[NS][NSV][N1][N2][N3];
   float G[ND][ND];
   double fk[ND], z2[ND];
-  double xnu, ll, mu, mup, young, fk2, fk4,kk;
+  double fk2, kk;
   
-  //	mu = C44-(2.0*C44+C12-C11)/5.0;
-  //	ll = C12-(2.0*C44+C12-C11)/5.0;
-  //	young = mu*(3*ll+2*mu)/(ll+mu);
-  //	xnu = young/2.0/mu-1.0;
+  // double mu = C44-(2.0*C44+C12-C11)/5.0;
+  // double ll = C12-(2.0*C44+C12-C11)/5.0;
+  // double young = mu*(3*ll+2*mu)/(ll+mu);
+  // double xnu = young/2.0/mu-1.0;
   
-  mu = C44;
-  ll = C12;
-  mup= C11-C12-2*C44;
+  double mu = C44;
+  double ll = C12;
+  double mup = C11-C12-2*C44;
   
   /* set Cijkl*/
   
@@ -1368,7 +1370,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
 	fk[1] = fy[nfreq];
 	fk[2] = fz[nfreq];
 	fk2 = fk[0]*fk[0]+fk[1]*fk[1]+fk[2]*fk[2];
-	fk4 = fk2*fk2;
+	//double fk4 = fk2*fk2;
 	if(fk2>0){
 	  z2[0] = fk[0]*fk[0]/fk2;
 	  z2[1] = fk[1]*fk[1]/fk2;
@@ -1403,10 +1405,10 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
 	      for (n=0; n<ND; n++) {
 		for (u=0; u<ND; u++) {
 		  for (v=0; v<ND; v++) {
-		    kam = (ka)/NS1;
-		    kas = ka%NS1;
-		    kbm = (kb)/NS1;
-		    kbs = kb%NS1;
+		    //int kam = (ka)/NS1;
+		    //int kas = ka%NS1;
+		    //int kbm = (kb)/NS1;
+		    //int kbs = kb%NS1;
 		    if(kb<NS){
 		      B[ka][kb][k1][k2][k3]= B[ka][kb][k1][k2][k3] + A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
 		    }
@@ -1431,17 +1433,14 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
   printf("set F matrix \n");
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,n, u, v, k1,k2,k3,ka, nv, nb, nfreq;
-  int is, js, ks;
-  double  fkr;
-   
+  int i,j,k,l,m,n, u, v, k1,k2,k3,ka, nb, nfreq;
   
   static double C[ND][ND][ND][ND];
   static float F[NS][ND][ND], Fv[NV][ND][ND];
   static float D[NSV][ND][ND];
   static float G[ND][ND];
   static double fk[ND], z2[ND];
-  double xnu, ll, mu, mup, young, fk2, fk4,kk;
+  double ll, mu, mup, fk2, kk;
   static float A[ND][ND][ND][ND];
   static double C_rotate[ND][ND][ND][ND];
   
@@ -1528,7 +1527,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	fk[1] = fy[nfreq];
 	fk[2] = fz[nfreq];
 	fk2 = fk[0]*fk[0]+fk[1]*fk[1]+fk[2]*fk[2];
-	fk4 = fk2*fk2;
+	//double fk4 = fk2*fk2;
 	
 	if(fk2>0) {
 	  z2[0] = fk[0]*fk[0]/fk2;
@@ -1783,7 +1782,7 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 
 void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND],int nf[4], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND]){
   
-  int i,j,k,l,is,k1,k2,k3,na0,na,nad1,nad2,nad3,nad4,nb,psys;
+  int i,j,is,k1,k2,k3,na0,na,nad1,nad2,nad3,nad4,nb;
   int na11, na12,na13,na21, na22, na23, na31, na32, na33;
   
   for (i=1; i<2*N1*N2*N3*ND*ND+1; i++){
@@ -1921,11 +1920,11 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, double *xi, double eps[NS][ND][ND], double epsv[NV][ND][ND],double C11, double C12, double C44, FILE *of5, int it, int itp, double avesigma[ND][ND],double theta1[NMAT][ND][ND], double slipdirection[ND], double xn[NS][ND], double *penetrationstress, double * penetrationstress2, int t_bwvirtualpf, int border, int ppoint_x, int ppoint_y, int ppoint_z){
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-	int i,j,k,l,m,k1,k2,k3,na,nb,na0,nad1,nad2,y;
-    int na11, na12,na13,na21, na22, na23, na31, na32, na33;
+	int i,j,k,l,m,k1,k2,k3,na,nb,na0,nad1,y;
+    int na11, na12,na13, na22, na23, na33;
     int is;
     double C[ND][ND][ND][ND];
-    double mu, mup, xnu, young, ll;
+    double mu, mup, ll;
     int  is_p0; // these should be the same as those in interfacevolv!!
     double resolve[ND][ND];
     
@@ -1999,7 +1998,7 @@ void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, 
                             for (l=0;l<ND;l++){
                                 na0 = 2*(k1*N2*N3 + k2*N3 + k3 + k*N1*N2*N3+l*N1*N2*N3*ND);
 					            nad1 = na0+1;
-					            nad2 = na0+2;
+					            //int nad2 = na0+2;
 					            datasigma[na+1] += C[i][j][k][l]*(dataeps[nad1]-dataepsd[nad1]);
                             }
                         }
@@ -2021,11 +2020,11 @@ void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, 
                     na11 = na0 + 2*(0*N1*N2*N3+0*N1*N2*N3*ND) ;
                     na12 = na0 + 2*(0*N1*N2*N3+1*N1*N2*N3*ND) ;
                     na13 = na0 + 2*(0*N1*N2*N3+2*N1*N2*N3*ND) ;
-                    na21 = na0 + 2*(1*N1*N2*N3+0*N1*N2*N3*ND) ;
+                    //int na21 = na0 + 2*(1*N1*N2*N3+0*N1*N2*N3*ND) ;
                     na22 = na0 + 2*(1*N1*N2*N3+1*N1*N2*N3*ND) ;
                     na23 = na0 + 2*(1*N1*N2*N3+2*N1*N2*N3*ND) ;
-                    na31 = na0 + 2*(2*N1*N2*N3+0*N1*N2*N3*ND) ;
-                    na32 = na0 + 2*(2*N1*N2*N3+1*N1*N2*N3*ND) ;
+                    //int na31 = na0 + 2*(2*N1*N2*N3+0*N1*N2*N3*ND) ;
+                    //int na32 = na0 + 2*(2*N1*N2*N3+1*N1*N2*N3*ND) ;
                     na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
                     
                     if (k2==0) {
@@ -2061,9 +2060,9 @@ void stress (float *dataepsd, float *datasigma, float *dataeps, float * sigmav, 
     return;
 }
 
-void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_o){
-
-  int ir, na0, na, na1,nad1,nad2, nao, is, i, j, k;
+void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_o)
+{
+  int ir, na0, na1,nad1,nad2, nao, is, i, j, k;
   
   Rv=(N1/6)*(N1/6);
   for(is=0;is<NSV;is++)  {
@@ -2071,7 +2070,7 @@ void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_
       for(j=0;j<N2;j++) {
 	for(k=0;k<N3;k++)	{				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  nao = (k+(j)*N3+(i)*N3*N2);
 	  na1 = na0+1;
 	  nad1 = na0+1;
@@ -2116,7 +2115,7 @@ void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_
 
 void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o){
   
-  int na0, na, na1,nad1,nad2, nao, is, i, j, k;
+  int na0, na1,nad1,nad2, nao, is, i, j, k;
   double ir, R;
   
   R = (double)(N1/4.0*N1/4.0);
@@ -2126,7 +2125,7 @@ void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o){
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++)  {				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  nao = k+j*N3+i*N3*N2;
 	  na1 = na0+1;
 	  nad1 = na0+1;
@@ -2164,22 +2163,21 @@ void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o){
 
 void in_virtual_flat(float *data,double *xi,double *xi_bc, int * xi_o){
   
-  int na0, na, na1,nad1,nad2, nao, is, i, j, k;
-  double ir, R;
+  int na0, na1,nad1,nad2, nao, is, i, j, k;
   
-  R = (double)(N1/4.0*N1/4.0);
+  //double R = (double)(N1/4.0*N1/4.0);
   
   for(is=0;is<NSV;is++) {
     for(i=0;i<N1;i++)	{	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++)	{				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  nao = k+j*N3+i*N3*N2;
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
-	  ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
+	  //double ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 	  if (is>=NS){		  
 	    xi[na0] = 0.0;
 	    xi[na1] = 0.0;
@@ -2212,7 +2210,7 @@ void in_virtual_flat(float *data,double *xi,double *xi_bc, int * xi_o){
 
 void in_virtual_cylinvoid(int Rv, float * data, double * xi, double * xi_bc, int * xi_o){
   
-  int ir, na0, na, na1,nad1,nad2, nao, is, i, j, k;
+  int ir, na0, na1,nad1,nad2, nao, is, i, j, k;
   
   Rv=10*10;//(N1/6)*(N1/6);
   for(is=0;is<NSV;is++)  {     
@@ -2220,7 +2218,7 @@ void in_virtual_cylinvoid(int Rv, float * data, double * xi, double * xi_bc, int
       for(j=0;j<N2;j++){
 	for(k=0;k<N3;k++)	{				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  nao = k+j*N3+i*N3*N2;
 	  na1 = na0+1;
 	  nad1 = na0+1;
@@ -2265,18 +2263,18 @@ void in_virtual_cylinvoid(int Rv, float * data, double * xi, double * xi_bc, int
 
 void in_virtual_epitax(int Rv, float * data, double * xi, double * xi_bc, int * xi_o){
   
-  int na0, na, na1,nad1,nad2, nao, is, i, j, k;
-  double ir, R,h;
+  int na0, na1,nad1,nad2, nao, is, i, j, k;
+  double h;
   
   h = N2/2;//N2/2;//N3/2;//N3-8;//N2/2;
-  R = (double)(N1/4.0*N1/4.0);
+  //double R = (double)(N1/4.0*N1/4.0);
   
   for(is=0;is<NSV;is++) {
     for(i=0;i<N1;i++) {	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++){				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  nao = k+j*N3+i*N3*N2;
 	  na1 = na0+1;
 	  nad1 = na0+1;
@@ -2318,7 +2316,7 @@ void in_virtual_epitax(int Rv, float * data, double * xi, double * xi_bc, int * 
 
 void in_virtual_homo(float * data, double * xi, double * xi_bc){
   
-  int ir, na0, na, na1,nad1,nad2, is, i, j, k;
+  int na0, na1,nad1,nad2, is, i, j, k;
   
   
   for(is=0;is<NSV;is++)  {
@@ -2326,7 +2324,7 @@ void in_virtual_homo(float * data, double * xi, double * xi_bc){
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++) {				
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2348,21 +2346,16 @@ void in_virtual_homo(float * data, double * xi, double * xi_bc){
 
 void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_o,int border,int ppoint_x, int ppoint_y, int ppoint_z){
   
-  int ir, na0, na, na1,nad1,nad2, nao, is, ism, iss, i, j, k,rr;
-  double r, rmin1,rmin2, r1, r2,r3, r4, r5, r6,rcylin, t1,yita;
+  int na0, na1,nad1,nad2, nao, is, ism, iss, i, j, k;
     
-  float *data_CUFFT = malloc( (NSV)*(N1)*(N2)*(N3)*2*sizeof(float));
+  //double rmin1 = (double)N1/4.0-3.0;//(double)N1/6.0;
+  //double rmin2 = (double)N1/6.0;
+  //double rcylin=(double)N1/4.0;
   
-  rmin1 = (double)N1/4.0-3.0;//(double)N1/6.0;
-  rmin2 = (double)N1/6.0;
-  rcylin=(double)N1/4.0;
-  
-  t1 = 45./180.*pi;
-  const int Dislocation_End=1;
-  const int Dislocation_Start=256;
+  //double t1 = 45./180.*pi;
   // int NS1 = NS/NMAT;
   //mark
-  yita = 2./2./(1-0.34); //for edge
+  //double yita = 2./2./(1-0.34); //for edge
   //   yita = 0.5 * 2.; //for screw *2 ~~d = 2b
   
    
@@ -2393,7 +2386,7 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++){		
 	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  na = 2*(k+(j)*N3+(i)*N3*N2);
+	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2520,12 +2513,6 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	    
 	    data[nad1] = xi[na0];
 	    data[nad2] = xi[na1];
-	   #if 0
-	   data_CUFFT[nad1][REAL]= xi[na0];
-	   data_CUFFT[nad1][IMAG]= 0.;
-	   data_CUFFT[nad2][REAL]= xi[na1];
-	   data_CUFFT[nad2][IMAG]= 0.; 
-          #endif  
 	  }
 	  
 	  else{  //is>=NS
@@ -2563,21 +2550,18 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 
 void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, int nf[4], double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
-  float *xdata2 = _data2 - 1;
-    int isa, isb, i, j, k, na0, nas, na,na1, nad1, nad2, nb, u,v, psys, ir, itt,naij, nao, indm[2],m,n;
-	float sigr, sigi,dE,dE_imag,dE_min[9];
+    int isa, isb, i, j, k, na0, nas, na,na1, nad1, nad2, nb, u,v, naij, nao, indm[2];
+    float sigr, sigi,dE,dE_imag;
     dE=0.0;
     dE_imag = 0.0;
-    for (i=0; i<9; i++) {
-        dE_min[i]=0.0;
-    }
+    //float dE_min[9] = {};
 		 /* 
 		 for (i=1; i<2*N1*N2*N3*NSV+1; i++)
 		 {
 		 data2[i] = 0;
 		 } */
 //printf("virtual data2\n");
-     itt = itp*NT+it;
+    //int itt = itp*NT+it;
      for(isa=0;isa<NSV;isa++)
 	 {
          for(isb=0;isb<NSV;isb++)
@@ -2730,8 +2714,9 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 	
 void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], double eps[NS][ND][ND], double * xi_bc, double * sigmal, int * xi_o)
 {
-  int is, i, j, k,k1,k2,k3,na0,na, nao,nam,naij;
-	double xibc1[N1],xibc2[N2],xibc3[N3],min1=1.0*N2*N3,min2=1.0*N1*N3,min3=1.0*N1*N2; //determine whether there is an infinite free surface parallel to one of the axes
+  int is, i, j,k1,k2,k3, nao,naij;
+  double xibc1[N1],xibc2[N2],xibc3[N3];
+	//double min1=1.0*N2*N3,min2=1.0*N1*N3,min3=1.0*N1*N2;; //determine whether there is an infinite free surface parallel to one of the axes
 	int flag=0; //indicate there is an infinite free surface when flag!=0
 	
 	for(k1=0;k1<N1;k1++){
@@ -2783,7 +2768,7 @@ void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], doubl
 			for(k2=0;k2<N2;k2++)
 				for(k3=0;k3<N3;k3++){
 					naij=k3+k2*N3+k1*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND;
-					na=2*(k3+(k2)*N3+(k1)*N3*N2+(NSV-1)*N1*N2*N3);
+					//int na=2*(k3+(k2)*N3+(k1)*N3*N2+(NSV-1)*N1*N2*N3);
 					if(flag==0) sigmal[naij]=sigma[k1][k2][k3][i][j];
 					else{
 						if(xibc1[k1]==-1 || xibc2[k2]==-1 || xibc3[k3]==-1) sigmal[naij]=0.0;
@@ -3003,7 +2988,7 @@ void setfcc (double xn[NS][ND], double xb[NS][ND])
 		printf("# of slip systems do not agree with function (setfcc) called.\n");
 		exit(1);
 	}
-  int i, j, k;
+  int i, j;
   float s3;
   
   s3 = sqrt(3);
@@ -3099,7 +3084,7 @@ void setfcc (double xn[NS][ND], double xb[NS][ND])
 
 void seteps (double eps[NS][ND][ND], double epsv[NV][ND][ND],double xn[NS][ND], double xb[NS][ND],double dslip2[NS], double AA[NMAT][ND][ND], double theta1[NMAT][ND][ND])
 {
-	double xn1[NV][ND],xb1[NV][ND],txn[NS][ND],txb[NS][ND],epst[NS][ND][ND];
+	double xn1[NV][ND],xb1[NV][ND],epst[NS][ND][ND];
 	int i, j, k, l, is, v, na;
 	
 	for (v=0;v<NV;v++){
@@ -3172,11 +3157,10 @@ return;
 //interface_n in global coordinates
 //theta1 in setorient should be ------ base in global * base in local coordinates
 void setorient(double theta1[NMAT][ND][ND]){
-	int i,j,k,na;
-	double t1;
+	int i,j,na;
 	double r[NMAT][ND];
 	
-	t1=0.0;//15.0/180.0*pi;//45.0/180.0*pi;
+	//double t1=0.0;//15.0/180.0*pi;//45.0/180.0*pi;
 	// set coordinate axes for different orienations
 	// axis e_i for grain orientation na is stored in theta1[na][i][*]
 	
@@ -3405,7 +3389,8 @@ void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND], doub
 			printf("\n");
 		}
 		
-		double base[6],ratio;
+		double base[6];
+		//double ratio;
 		for(i=0;i<3;i++){
 			if(ZLdC[nam][i] == 1){
 				for(k=i+1;k<3;k++){
@@ -3601,11 +3586,11 @@ void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND], doub
 // sedDorient ====set which part is material 1 and which is no.2 etc
 void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z){
   
-  int i,j,k,na,ir[9],l,check;
+  int i,j,k,na;
   FILE *MatType;
   MatType = fopen("Material_Type.txt","w");
   fprintf(MatType,"x,y,z,Material_Type\n");
-  check = 0;
+  //int check = 0;
   (*d_f)=(double)(N3-border-1);
   (*d_s)=(double)(border);
   
@@ -3628,7 +3613,7 @@ void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_
 
 void setMat(double C[NMAT][3], double S[NMAT][3],double b2[NS],double dslip2[NS], double C11, double C12, double C44, double b, double dslip){
   
-  int na, nas, i,j;
+  int na, nas, i;
   double lC11, lC12,lC44, lS11,lS12,lS44;
 	
   if(MT==1) printf("This is an isotropic material.\n");  //isotropic material
@@ -3720,12 +3705,13 @@ float Imatrix(double * II, double * xi, double KK[NMAT][6][6], double C11, doubl
 	#define 	DELTA(i, j)   ((i==j)?1:0)
 	#define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
 
-	int i,j,k,l,m,n,u,v,nam,is,k1,k2,k3, nakl, naij, nao;
-	double mu, ll, mup, S11, S12, S44, c[ND][ND][ND][ND], ds[NMAT][ND][ND][ND][ND];
+	int i,j,k,l,k1,k2,k3, naij, nao;
+	//double u, v, S11, S12, S44;
+	//double c[ND][ND][ND][ND], ds[NMAT][ND][ND][ND][ND];
 	
-	mu = C44;
-	ll = C12;
-	mup= C11-C12-2*C44;
+	double mu = C44;
+	//double ll = C12;
+	//double mup = C11-C12-2*C44;
 	
 	/* for(nam = 0; nam<NMAT; nam++){
 		for(i=0;i<ND;i++)
@@ -3894,7 +3880,7 @@ FILE *of8;
 void frec( double *fx,double *fy, 
 		  double *fz, double d1, double d2, double d3)
 {
-	int i,j,k,ksym, nf;
+	int i,j,k, nf;
 	
 #ifdef UGPU
 #pragma acc data copyout(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
@@ -4241,12 +4227,12 @@ float Energy_calculation(double *fx, double *fy, double *fz, double eps[NS][ND][
 	int i,j,k,l,m,n, u, v, k1,k2,k3,nfreq,index,u_p[NS],v_p[NS];
 	double C[ND][ND][ND][ND];
 	static float strainv_real[ND][ND][N1][N2][N3];
-   static float strainv_imag[ND][ND][N1][N2][N3];
-  static  float strainp_real[NS][ND][ND][N1][N2][N3];
-  static  float strainp_imag[NS][ND][ND][N1][N2][N3];
+	static float strainv_imag[ND][ND][N1][N2][N3];
+	// static  float strainp_real[NS][ND][ND][N1][N2][N3];
+	// static  float strainp_imag[NS][ND][ND][N1][N2][N3];
 	float G[ND][ND];
 	double fk[ND];
-	double ll, mu, mup, fk2, fk4;
+	double ll, mu, fk2, fk4;
     float en;
 static	float A[N1][N2][N3][ND][ND][ND][ND];
 static    float E_real[N1][N2][N3];
@@ -4330,12 +4316,12 @@ static    float E_real[N1][N2][N3];
                             nfreq = k + j*N3 + i*N2*N3;
                             index = 2*(nfreq + m*N1*N2*N3)+1;
                             if (u==u_p[m]&&v==v_p[m]) {
-                                strainp_real[m][u][v][i][j][k]=data[index];
-                                strainp_imag[m][u][v][i][j][k]=data[index+1];
+  //strainp_real[m][u][v][i][j][k]=data[index];
+  //strainp_imag[m][u][v][i][j][k]=data[index+1];
                             }
                             else{
-                                strainp_real[m][u][v][i][j][k]=0.0;
-                                strainp_imag[m][u][v][i][j][k]=0.0;
+  //strainp_real[m][u][v][i][j][k]=0.0;
+  //strainp_imag[m][u][v][i][j][k]=0.0;
                             }
                             
                         }
@@ -4384,7 +4370,7 @@ static    float E_real[N1][N2][N3];
 	#endif
 	mu = C44;
 	ll = C12;
-	mup= C11-C12-2*C44;
+	//int mup= C11-C12-2*C44;
 //	struct timespec now, tmstart;
 //        clock_gettime(CLOCK_REALTIME, &tmstart);
 	#ifdef UGPU 
@@ -4677,7 +4663,7 @@ static    float E_real[N1][N2][N3];
 
 double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * _data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float * datag,float * data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
 {
-    int isa,is, i, j, k, na0,na1,nad1,nad2;
+    int isa,is, i, j, k, na0,na1,nad1;
     double gamma;
     gamma = 0.0;
 	for(is=0;is<NS;is++){
@@ -4690,7 +4676,7 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * 
                     na0 = 2*(k+(j)*N3+(i)*N3*N2+(isa)*N1*N2*N3);
                     na1 = na0+1;
                     nad1 = na0+1;
-                    nad2 = na0+2;
+                    //int nad2 = na0+2;
                     if(xi_bc[na0]==0){//evolve bulk phase field
                         if(0){	//does not apply gradient term
                             xi[na0] = xi[na0]-CD2[isa]*(uq2*_data2[na0  ]/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+datag[nad1]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
@@ -4855,10 +4841,9 @@ void calculateD4int(double a_f, double a_s, double Cm[NMAT][3], double theta1[NM
 void interfacevolv(double * xi, double * penetrationstress, double D00, double D01, double D10, double D11,double lam1,double lam2,double stressthreshold,int *checkpass,int border,int ppoint_x, int ppoint_y, int ppoint_z, double C44, double a_s, double a_f, double * penetrationstress2, int *it_checkEbarrier,FILE * ofcheckEbarrier){
     int is_p0,is_p1,is_r0,is_r1;
     int na0,na1;
-    int j,k,y;
-    double xi0_ave[N2], xi0_r[N2], xi1_ave[N2],xi1_r[N2];//only valid for N2=2
+    int k,y;
+    double xi0_ave[N2], xi0_r[N2];//only valid for N2=2
     double stressthreshold_final[N2];
-    double E;
     
     is_r0 = 0;
     is_r1 = 2;
@@ -4868,8 +4853,9 @@ void interfacevolv(double * xi, double * penetrationstress, double D00, double D
     xi0_ave[1] = xi[2*(ppoint_z+(ppoint_y+1)*N3+(ppoint_x)*N3*N2+is_p0*N1*N2*N3)];
     xi0_r[0] = xi[2*(ppoint_z+ppoint_y*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)];
     xi0_r[1] = xi[2*(ppoint_z+(ppoint_y+1)*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)];
-    xi1_r[0] = xi[2*(ppoint_z+1+ppoint_y*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
-    xi1_r[1] = xi[2*(ppoint_z+1+(ppoint_y+1)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
+    /* double xi1_r[N2]; */
+    /* xi1_r[0] = xi[2*(ppoint_z+1+ppoint_y*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)]; */
+    /* xi1_r[1] = xi[2*(ppoint_z+1+(ppoint_y+1)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)]; */
    
     stressthreshold_final[0] = stressthreshold * xi0_ave[0] * xi0_ave[0];
     stressthreshold_final[1] = stressthreshold * xi0_ave[1] * xi0_ave[1];
@@ -5030,10 +5016,10 @@ float maximum(float a[9]){
 
 void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[NMAT][3],int border,int ppoint_x, int ppoint_y, int ppoint_z, double interface_n[ND]){
   
-  int i,j,k,u,v,m,n,p,q,na;
+  int i,j,k,u,v,m,n,p,q;
   double E[NMAT],miu[NMAT],C_effective[NMAT],stressmisfit_max[NMAT];//0 is substrate, 1 is film
   double hc;
-  double distance,dist_sign;
+  double distance;
   double rotate_100_interface[ND][ND],sigma_temp[ND][ND];
   double maxreshear;
   
@@ -5078,7 +5064,7 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
     for (j=0; j<N2; j++) {
       for (k=0; k<N3; k++) {
 	distance = fabs(interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z));
-	dist_sign = (interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z));
+	//double dist_sign = (interface_n[0]*(i-ppoint_x) + interface_n[1]*(j-ppoint_y) + interface_n[2]*(k-ppoint_z));
 	//applied stress:
 	for (u=0; u<ND; u++) {
 	  for (v=0; v<ND; v++) {
@@ -5093,12 +5079,13 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
 	}
 	//misfit stress:
 	if (distance <= hc) {
-	  if (dist_sign <= 0) {
-	    na = 0;
-	  }
-	  else {
-	    na = 1;
-	  }
+	  /* int na; */
+	  /* if (dist_sign <= 0) { */
+	  /*   na = 0; */
+	  /* } */
+	  /* else { */
+	  /*   na = 1; */
+	  /* } */
 	  sigma_temp[0][0] = 0.0;//(-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
 	  sigma_temp[1][1] = 0.0;//(-stressmisfit_max[na]*distance/hc+stressmisfit_max[na])/(E[0]/2./(1+miu[0]));
           
@@ -5127,7 +5114,7 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
 }
 
 float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z, double D00, double D01, double D10, double D11){
-    int i,j,k,is,na0,na1,ism,iss;
+    int j,is,na0,na1,ism;
     double xi_0,xi_1;
     float en_Residual;
     en_Residual = 0.0;
@@ -5138,7 +5125,7 @@ float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoin
         xi_1 = 0.0;
         for (is=0; is<NS; is++) {
             ism = (is)/NS1;
-            iss = is%NS1;
+            //double iss = is%NS1;
             if (ism==0) {
                 na0 = 2*(ppoint_z+(j)*N3+(ppoint_x)*N3*N2+(is)*N1*N2*N3);
                 xi_0 = xi_0 + xi[na0];

@@ -9,8 +9,6 @@
 
 //1000 timesteps not converging for CDv 0.2.(esp sigma 33, very large overall) trying larger NT 5000
 
-
-
 #include<math.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -35,6 +33,10 @@ WTime(void)
   return tv.tv_sec + tv.tv_usec / 1e6;
 }
 
+#define I5V(i,j,k,m,n) (((((n) * NSV + (m)) * N1 + (i)) * N2 + (j)) * N3 + (k))
+#define I5(i,j,k,m,n)  (((((n) * NS  + (m)) * N1 + (i)) * N2 + (j)) * N3 + (k))
+#define I4(i,j,k,m)   I5(i,j,k,m,0)
+#define I3(i,j,k)     I4(i,j,k,0)
 
 
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
@@ -647,8 +649,8 @@ int main(void)
 	for(i=0;i<N1;i++){
 	  for(j=0;j<N2;j++){
 	    for(k=0;k<N3;k++){
-	      na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	      na = 2*(k+(j)*N3+(i)*N3*N2);
+	      na0 = 2*I4(i, j, k, is);
+	      na = 2*I3(i,j,k);
 	      na1 = na0+1;
 	      nad1 = na0+1;
 	      nad2 = na0+2;
@@ -798,7 +800,7 @@ int main(void)
 		      na1 = na0+1;
 		      nad1 = na0+1;
 		      nad2 = na0+2;
-		      nb = k+(j)*N3+(i)*N2*N3+(isa)*N1*N2*N3+(isb)*N1*N2*N3*NS;
+		      nb = I5(i, j, k, isa, isb);
 		      _data2[na  ] += data[nad1] * BB[nb];
 		      _data2[na+1] += data[nad2] * BB[nb];
 		      if(isb<NS){
@@ -914,14 +916,14 @@ int main(void)
 		  if(yright>=N2){yright += -N2;}
 		  if(zright>=N2){zright += -N3;}
 		  for(is=0;is<NS;is++){
-		    // na0 = 2*(k+(j)*N1+(i)*N1*N2+(is)*N1*N2*N3);
-		    naxright = 2*(k+j*N3+xright*N2*N3+is*N1*N2*N3);
-		    naxleft = 2*(k+j*N3+xleft*N2*N3+is*N1*N2*N3);
-		    nayright = 2*(k+yright*N3+i*N2*N3+is*N1*N2*N3);
-		    nayleft = 2*(k+yleft*N3+i*N2*N3+is*N1*N2*N3);
+		    // na0 = 2*I4(i, j, k, is);
+		    naxright = 2*I4(xright, j, k, is);
+		    naxleft  = 2*I4(xleft, j, k, is);
+		    nayright = 2*I4(i, yright, k, is);
+		    nayleft  = 2*I4(i, yleft, k, is);
 #if 0 // avoid warning
-		    nazright = 2*(zright+j*N3+i*N2*N3+is*N1*N2*N3);
-		    nazleft = 2*(zleft+j*N3+i*N2*N3+is*N1*N2*N3);
+		    nazright = 2*I4(i, j, zright, is);
+		    nazleft = 2*I4(i, j, zleft, is);
 #endif
 		    ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 		    if(ir<(double)((N1/4-1)*(N1/4-1))){
@@ -975,7 +977,7 @@ int main(void)
 	    for (i=0; i<N1; i++) {
 	      for (j=0; j<N2; j++) {
 		for (k=0; k<N3; k++) {
-		  na0 = 2*(k+(j)*N3+(i)*N3*N2+(isa)*N1*N2*N3);
+		  na0 = 2*I4(i, j, k, isa);
 		  na1 = na0+1;
 		  nad1 = na0+1;
 		  nad2 = na0+2;
@@ -1005,7 +1007,7 @@ int main(void)
 		for (i=0; i<N1; i++) {
 		  for (j=0; j<N2; j++) {
 		    for (k=0; k<N3; k++) {
-		      na0 = 2*(k+(j)*N3+(i)*N3*N2+(isa)*N1*N2*N3);
+		      na0 = 2*I4(i, j, k, isa);
 		      na1 = na0+1;
 		      nad1 = na0+1;
 		      nad2 = na0+2;
@@ -1053,13 +1055,13 @@ int main(void)
 		    for(i=0;i<N1;i++){
 		      for(j=0;j<N2;j++){
 			for(k=0;k<N3;k++){
-			  na0 = 2*(i*N2*N3 + j*N3 + k + isb*N1*N2*N3);
-			  na = 2*(i*N2*N3 + j*N3 + k + isa*N1*N2*N3);
+			  na0 = 2*I4(i, j, k, isb);
+			  na  = 2*I4(i, j, k, isa);
 			  if(isa<NS){
 			    na1 = na0+1;
 			    nad1 = na0+1;
 			    nad2 = na0+2;
-			    nb = k+(j)*N3+(i)*N2*N3+(isa)*N1*N2*N3+(isb)*N1*N2*N3*NS;
+			    nb = I5(i, j, k, isa, isb);
 			    _data2[na  ] += data[nad1] * BB[nb];
 			    _data2[na+1] += data[nad2] * BB[nb];
 			    if(isb<NS){
@@ -1070,7 +1072,7 @@ int main(void)
 			  if(isa >= NS ){
 			    nad1 = na0+1;
 			    nad2 = na0+2;
-			    nb = k+(j)*N3+(i)*N2*N3+(isb)*N1*N2*N3+(isa-NS)*N1*N2*N3*NSV;
+			    nb = I5V(i, j, k, isb, isa-NS);
 			    _data2[na  ] += data[nad1] * DD[nb];
 			    _data2[na+1] += data[nad2] * DD[nb];
 			  }
@@ -2075,9 +2077,9 @@ void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_
     for(i=0;i<N1;i++)	{	
       for(j=0;j<N2;j++) {
 	for(k=0;k<N3;k++)	{				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
-	  nao = (k+(j)*N3+(i)*N3*N2);
+	  na0 = 2*I4(i, j, k, is);
+	  //int na = 2*I3(i, j, k);
+	  nao = I3(i, j, k);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2131,9 +2133,9 @@ void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o)
     for(i=0;i<N1;i++)  	{	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++)  {				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
-	  nao = k+j*N3+i*N3*N2;
+	  na0 = 2*I4(i, j, k, is);
+	  //int na = 2*I3(i, j, k, is);
+	  nao = I3(i, j, k);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2179,9 +2181,9 @@ void in_virtual_flat(float *data,double *xi,double *xi_bc, int * xi_o)
     for(i=0;i<N1;i++)	{	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++)	{				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
-	  nao = k+j*N3+i*N3*N2;
+	  na0 = 2*I4(i, j, k, is);
+	  //int na = 2*I3(i, j, k);
+	  nao = I3(i, j, k);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2226,9 +2228,9 @@ void in_virtual_cylinvoid(int Rv, float * data, double * xi, double * xi_bc, int
     for(i=0;i<N1;i++)	{	
       for(j=0;j<N2;j++){
 	for(k=0;k<N3;k++)	{				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
-	  nao = k+j*N3+i*N3*N2;
+	  na0 = 2*I4(i, j, k, is);
+	  //int na = 2*I3(i, j, k);
+	  nao = I3(i, j, k);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2283,8 +2285,8 @@ void in_virtual_epitax(int Rv, float * data, double * xi, double * xi_bc, int * 
     for(i=0;i<N1;i++) {	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++){				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
+	  na0 = 2*I4(i, j, k, is);
+	  //int na = 2*I3(i, j, k);
 	  nao = k+j*N3+i*N3*N2;
 	  na1 = na0+1;
 	  nad1 = na0+1;
@@ -2334,8 +2336,7 @@ void in_virtual_homo(float * data, double * xi, double * xi_bc)
     for(i=0;i<N1;i++) {	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++) {				
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	  //int na = 2*(k+(j)*N3+(i)*N3*N2);
+	  na0 = 2*I4(i, j, k, is);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  nad2 = na0+2;
@@ -2396,12 +2397,12 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	for(i=0;i<N1;i++) {	
 	  for(j=0;j<N2;j++)	{
 	    for(k=0;k<N3;k++){		
-	      na0 = 2*(k+(j)*N3+(i)*N3*N2+(is)*N1*N2*N3);
-	      //int na = 2*(k+(j)*N3+(i)*N3*N2);
+	      na0 = 2*I4(i, j, k, is);
+	      //int na = 2*I3(i, j, k);
 	      na1 = na0+1;
 	      nad1 = na0+1;
 	      nad2 = na0+2;
-	      nao = (k+(j)*N3+(i)*N3*N2);
+	      nao = I3(i, j, k);
 	      if(is<NS)    {
 		xi[na0] = 0.0;      //(k+1)+(j+1)*10.0+(i+1)*100.0
 		xi[na1] = 0.0;
@@ -2465,7 +2466,7 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 			    xi[na0] = 0.0;
 			  }
 		      }
-		      /*  if ((xi_o[nao]==1 && xi_o[k-1+(j)*N3+(i)*N3*N2]==0) &&(k!=0&&i!=0)) {
+		      /*  if ((xi_o[nao]==1 && xi_o[I3(i, j, k-1]==0) &&(k!=0&&i!=0)) {
 			  #ifndef _OPENACC
 			  printf("residual here, i=%d, j=%d, k=%d,is=%d\n",i,j,k,is);
 			  #endif
@@ -2581,13 +2582,13 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 	    for(j=0;j<N2;j++)
 	      for(k=0;k<N3;k++)
 		{
-		  na0 = 2*(i*N2*N3 + j*N3 + k + isb*N1*N2*N3);
-		  na = 2*(i*N2*N3 + j*N3 + k + isa*N1*N2*N3);
+		  na0 = 2*I4(i, j, k, isb);
+		  na  = 2*I4(i, j, k, isa);
 		  if(isa >= NS )
 		    {
 		      nad1 = na0+1;
 		      nad2 = na0+2;
-		      nb = k+(j)*N3+(i)*N2*N3+(isb)*N1*N2*N3+(isa-NS)*N1*N2*N3*NSV;
+		      nb = I5V(i, j, k, isb, isa-NS);
 		      _data2[na  ] += data[nad1] * DD[nb];
 		      _data2[na+1] += data[nad2] * DD[nb];
 		    }
@@ -2631,14 +2632,14 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 	  for(j=0;j<N2;j++)
 	    for(k=0;k<N3;k++)
 	      {
-		na0 = 2*(k+(j)*N3+(i)*N3*N2+(isa)*N1*N2*N3);
-		nas = 2*(k+(j)*N3+(i)*N3*N2+(isa-NS)*N1*N2*N3);
-		na = 2*(k+(j)*N3+(i)*N3*N2);
-		nao = (k+(j)*N3+(i)*N3*N2);
+		na0 = 2*I4(i, j, k, isa);
+		nas = 2*I4(i, j, k, isa-NS);
+		na = 2*I3(i, j, k);
+		nao = I3(i, j, k);
 		na1 = na0+1;
 		nad1 = na0+1;
 		nad2 = na0+2;
-		naij = k+(j)*N3+(i)*N3*N2+(u)*N1*N2*N3 + (v)*N1*N2*N3*ND;
+		naij = I4(i, j, k, u + v*ND);
 		sigr = -(_data2[na0  ]/(N1*N2*N3)-sigmal[naij]);
 		sigi = -(_data2[na0+1]/(N1*N2*N3));
 		sigmav[nas] = sigr;
@@ -2704,8 +2705,8 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 			    else if(ZLdC[xi_o[nao]][indv]==2)
 			      {	//condition from dC
 				Indv2mat(prop[xi_o[nao]][indv], indm);
-				xi[na0] = -xi[2*(k+(j)*N3+(i)*N3*N2+(indm[0]+ND*indm[1]+NS)*N1*N2*N3)];
-				xi[na1] = -xi[2*(k+(j)*N3+(i)*N3*N2+(indm[0]+ND*indm[1]+NS)*N1*N2*N3)+1];
+				xi[na0] = -xi[2*I4(i, j, k, indm[0]+ND*indm[1]+NS)  ];
+				xi[na1] = -xi[2*I4(i, j, k, indm[0]+ND*indm[1]+NS)+1];
 			      }
 			    if(fabs(xi[na0])>1E10)
 			      {
@@ -3917,7 +3918,7 @@ void frec( double *fx,double *fy,
 	    {
 	      for(k=0;k<N3;k++)
 		{
-		  nf = k+(j)*N3+(i)*N3*N2;
+		  nf = I3(i, j, k);
 		  /* frecuency in x */
 		  if (i==0) {
 		    fx[nf]= 0.0;
@@ -4690,7 +4691,7 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * 
     for (i=0; i<N1; i++) {
       for (j=0; j<N2; j++) {
 	for (k=0; k<N3; k++) {
-	  na0 = 2*(k+(j)*N3+(i)*N3*N2+(isa)*N1*N2*N3);
+	  na0 = I4(i,j,k,isa);
 	  na1 = na0+1;
 	  nad1 = na0+1;
 	  //int nad2 = na0+2;
@@ -4897,8 +4898,8 @@ void interfacevolv(double * xi, double * penetrationstress, double D00, double D
   for (y=0; y<N2; y++) {// only valid for N2=2
     if (xi0_ave[y] >=1.0) {
       if (penetrationstress[y] >= stressthreshold_final[y]) {
-	na0 = 2*(ppoint_z+y*N3+(ppoint_x)*N3*N2+is_p0*N1*N2*N3);
-	na1 = 2*(ppoint_z+1+(y)*N3+(ppoint_x)*N3*N2+is_p1*N1*N2*N3);
+	na0 = 2*I4(ppoint_x, y, ppoint_z, is_p0);
+	na1 = 2*I4(ppoint_x, y, ppoint_z, is_p1);
 	xi[na1] = (xi[na0]+xi[2*(ppoint_z+y*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)])*lam2-xi[2*(ppoint_z+1+(y)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
 	(*checkpass) = 0;
 	printf("in interfacevolv: pass at y = %d!\n",y);
@@ -5151,12 +5152,12 @@ float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoin
       ism = (is)/NS1;
       //double iss = is%NS1;
       if (ism==0) {
-	na0 = 2*(ppoint_z+(j)*N3+(ppoint_x)*N3*N2+(is)*N1*N2*N3);
+	na0 = 2*I4(ppoint_x, j, ppoint_z, is);
 	xi_0 = xi_0 + xi[na0];
                 
       }
       if (ism==1) {
-	na1 = 2*(ppoint_z+1+(j)*N3+(ppoint_x)*N3*N2+(is)*N1*N2*N3);
+	na1 = 2*I4(ppoint_x, j, ppoint_z, is);
 	xi_1 = xi_1 + xi[na1];
       }
     }

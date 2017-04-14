@@ -4006,6 +4006,35 @@ zero_ave(double avesigma[ND][ND], double avepsd[ND][ND],
   }
 }
 
+static void
+calc_data2_datag(float *data2, float *datag, float *data, double *BB, double *GG)
+{
+  for (int i=0; i < 2*N1*N2*N3*NSV; i++) {
+    data2[i] = 0.;
+  }
+  for (int i=0; i < 2*N1*N2*N3*NS; i++){
+    datag[i] = 0.;
+  }
+  
+  for(int isa=0;isa<NS;isa++){
+    for(int isb=0;isb<NSV;isb++){
+      for(int i=0;i<N1;i++){
+	for(int j=0;j<N2;j++){
+	  for(int k=0;k<N3;k++){
+	    if (isa < NS){
+	      DATA2(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * BB(i,j,k, isa,isb);
+	      DATA2(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * BB(i,j,k, isa,isb);
+	      if (isb < NS){
+		DATAG(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * GG(i,j,k, isa,isb);
+		DATAG(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * GG(i,j,k, isa,isb);
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
     
 int main(void)
 {
@@ -4371,33 +4400,8 @@ int main(void)
 #pragma acc host_data use_device(data)
 #endif
 	fft_forward(data, NSV);
-	    
-	for (i=0; i < 2*N1*N2*N3*NSV; i++) {
-	  data2[i] = 0.;
-	}
-	for (i=0; i < 2*N1*N2*N3*NS; i++){
-	  datag[i] = 0.;
-	}
-          
-	for(isa=0;isa<NS;isa++){
-	  for(isb=0;isb<NSV;isb++){
-	    for(i=0;i<N1;i++){
-	      for(j=0;j<N2;j++){
-		for(k=0;k<N3;k++){
-		  if (isa < NS){
-		    DATA2(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * BB(i,j,k, isa,isb);
-		    DATA2(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * BB(i,j,k, isa,isb);
-		    if (isb < NS){
-		      DATAG(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * GG(i,j,k, isa,isb);
-		      DATAG(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * GG(i,j,k, isa,isb);
-		    }
-		  }
-		}
-	      }
-	    }
-	  }
-	}
-          
+
+	calc_data2_datag(data2, datag, data, BB, GG);
           
 #ifdef USE_CUFFT
 #pragma acc data copy(datag[0:2*N1*N2*N3*NS])

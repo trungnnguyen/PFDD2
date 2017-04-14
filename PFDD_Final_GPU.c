@@ -263,17 +263,17 @@ float maximum(float a[9]);
 
 int main(void)
 {
-  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, na1, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
   int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
   int checkvirtual;
   int isa, isb;
-  int  nad1, nad2;
+  int  nad1;
   static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
   static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
   double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
   float *_data, *data2, *datag, *databeta;
-  float *data, *dataeps, *dataepsd, *datasigma, *sigmav;
+  float *dataeps, *dataepsd, *datasigma, *sigmav;
   double *f, *r;
   double d1, d2, d3, size3,ir,beta2;
   double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
@@ -353,7 +353,6 @@ int main(void)
   sizexi_bc = 2*(NSV)*(N1)*(N2)*(N3);
 
   _data = array4d_alloc(N1, N2, N3, NSV);
-  data = _data - 1;
   data2 = array4d_alloc(N1, N2, N3, NSV);
   datag = array4d_alloc(N1, N2, N3, NS);
   databeta = array5d_alloc(N1, N2, N3, ND, ND);
@@ -638,7 +637,7 @@ int main(void)
     
     
     
-      initial( data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
+      initial(_data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
       
       /*#ifdef GPUU
 	#pragma acc update device(data)
@@ -663,11 +662,8 @@ int main(void)
 	  for(j=0;j<N2;j++){
 	    for(k=0;k<N3;k++){
 	      na0 = 2*I4(i, j, k, is);
-	      na1 = na0+1;
-	      nad1 = na0+1;
-	      nad2 = na0+2;
-	      data[nad1] = xi[na0];
-	      data[nad2] = xi[na1];
+	      _data[na0  ] = xi[na0  ];
+	      _data[na0+1] = xi[na0+1];
 	    }
 	  }
 	}
@@ -810,15 +806,12 @@ int main(void)
 		  for(k=0;k<N3;k++){
 		    na0 = 2*I4(i, j, k, isb);
 		    if(isa<NS){
-		      na1 = na0+1;
-		      nad1 = na0+1;
-		      nad2 = na0+2;
 		      nb = I5(i, j, k, isa, isb);
-		      C4(data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
-		      C4(data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
+		      C4(data2, i,j,k, isa, 0) += _data[na0  ] * BB[nb];
+		      C4(data2, i,j,k, isa, 1) += _data[na0+1] * BB[nb];
 		      if(isb<NS){
-			C4(datag, i,j,k, isa, 0) += data[nad1] * GG[nb];
-			C4(datag, i,j,k, isa, 1) += data[nad2] * GG[nb];
+			C4(datag, i,j,k, isa, 0) += _data[na0  ] * GG[nb];
+			C4(datag, i,j,k, isa, 1) += _data[na0+1] * GG[nb];
 		      }
 		    }
 		  }
@@ -860,7 +853,7 @@ int main(void)
           
 	  /*strain & stress calculation*/
 	  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
-	    strain(databeta, dataeps, data, FF, FFv, epsv, nf, d1, d2, d3, size3, of3,it,itp, avepst);
+	    strain(databeta, dataeps, _data, FF, FFv, epsv, nf, d1, d2, d3, size3, of3,it,itp, avepst);
 	    if (it==NT-1) {
 	      printf("go till here!!!\n");
 	    }
@@ -961,14 +954,14 @@ int main(void)
 	  // #pragma acc data copyin(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3]) 
 	  // {
 	  //mark  energy_in
-	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,_data,interface_n,ppoint_x,ppoint_y,ppoint_z);
 	  //  }
 	  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
 	  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
 	  if ((it%1==0)||(it==NT-NTD-1)||(it==NT-NTD)) {
 	    fprintf(ofEnergy,"%d    %lf   %lf   %lf   %lf   %lf   %lf\n",it,energy_in,energy_in2,energy_in3,energy_in4,energy_Residual,energy_intotal);
 	  }
-	  virtualevolv(data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, nf, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
+	  virtualevolv(_data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, nf, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
           
 	  //mark extract xi in final step
 	  if (it==NT-NTD-1) {
@@ -991,11 +984,8 @@ int main(void)
 	      for (j=0; j<N2; j++) {
 		for (k=0; k<N3; k++) {
 		  na0 = 2*I4(i, j, k, isa);
-		  na1 = na0+1;
-		  nad1 = na0+1;
-		  nad2 = na0+2;
-		  data[nad1] = xi[na0];
-		  data[nad2] = xi[na1];
+		  _data[na0  ] = xi[na0  ];
+		  _data[na0+1] = xi[na0+1];
 		}
 	      }
 	    }
@@ -1011,7 +1001,7 @@ int main(void)
 	    printf("evolve plastic then evolve interface\n");
 	    do {
 	      gammalast = gamma;
-	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
+	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,_data,gamma1,nsize,a_f,a_s,C44,it_plastic);
 	      checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
 	      printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
 	      it_plastic = it_plastic + 1;
@@ -1021,11 +1011,8 @@ int main(void)
 		  for (j=0; j<N2; j++) {
 		    for (k=0; k<N3; k++) {
 		      na0 = 2*I4(i, j, k, isa);
-		      na1 = na0+1;
-		      nad1 = na0+1;
-		      nad2 = na0+2;
-		      data[nad1] = xi[na0];
-		      data[nad2] = xi[na1];
+		      _data[na0  ] = xi[na0  ];
+		      _data[na0+1] = xi[na0+1];
 		    }
 		  }
 		}
@@ -1072,23 +1059,18 @@ int main(void)
 			for(k=0;k<N3;k++){
 			  na0 = 2*I4(i, j, k, isb);
 			  if(isa<NS){
-			    na1 = na0+1;
-			    nad1 = na0+1;
-			    nad2 = na0+2;
 			    nb = I5(i, j, k, isa, isb);
-			    C4(data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
-			    C4(data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
+			    C4(data2, i,j,k, isa, 0) += _data[na0  ] * BB[nb];
+			    C4(data2, i,j,k, isa, 1) += _data[na0+1] * BB[nb];
 			    if(isb<NS){
-			      C4(datag, i,j,k, isa, 0) += data[nad1] * GG[nb];
-			      C4(datag, i,j,k, isa, 1) += data[nad2] * GG[nb];
+			      C4(datag, i,j,k, isa, 0) += _data[na0  ] * GG[nb];
+			      C4(datag, i,j,k, isa, 1) += _data[na0+1] * GG[nb];
 			    }
 			  }
 			  if(isa >= NS ){
-			    nad1 = na0+1;
-			    nad2 = na0+2;
 			    nb = I5V(i, j, k, isb, isa-NS);
-			    C4(data2, i,j,k, isa, 0) += data[nad1] * DD[nb];
-			    C4(data2, i,j,k, isa, 1) += data[nad2] * DD[nb];
+			    C4(data2, i,j,k, isa, 0) += _data[na0  ] * DD[nb];
+			    C4(data2, i,j,k, isa, 1) += _data[na0+1] * DD[nb];
 			  }
 			}
 		      }
@@ -1134,7 +1116,7 @@ int main(void)
 		
 		
 		if (1) {//checkpass==1
-		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,_data,interface_n,ppoint_x,ppoint_y,ppoint_z);
 		  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
 		  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
 		  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
@@ -1800,7 +1782,7 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 }
 
 
-void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND],int nf[4], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
+void strain(float *databeta, float *dataeps, float *_data, double *FF, double *FFv, double epsv[NV][ND][ND],int nf[4], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
 {
   int i,j,is,k1,k2,k3,na0,na,nad1,nad2,nb;
   int na11, na12,na13,na21, na22, na23, na31, na32, na33;
@@ -1823,13 +1805,13 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	      nad2 = na0+2;
 	      if(is<NS){
 		nb = k3+(k2)*N3+(k1)*N2*N3+(is)*N1*N2*N3+i*N1*N2*N3*NS+j*N1*N2*N3*NS*ND;
-		databeta[na  ] += data[nad1] * FF[nb];
-		databeta[na+1] += data[nad2] * FF[nb];
+		databeta[na  ] += _data[na0  ] * FF[nb];
+		databeta[na+1] += _data[na0+1] * FF[nb];
 	      }
 	      else{
 		nb = k3+(k2)*N3+(k1)*N2*N3+(is-NS)*N1*N2*N3+i*N1*N2*N3*NV+j*N1*N2*N3*NV*ND;
-		databeta[na  ] += data[nad1] * FFv[nb];
-		databeta[na+1] += data[nad2] * FFv[nb];
+		databeta[na  ] += _data[na0  ] * FFv[nb];
+		databeta[na+1] += _data[na0+1] * FFv[nb];
 	      }
 	    }
 	  }
@@ -2365,9 +2347,9 @@ void in_virtual_homo(float * data, double * xi, double * xi_bc)
   return;
 }
 
-void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_o,int border,int ppoint_x, int ppoint_y, int ppoint_z){
+void initial(float *_data, double * xi, double * xi_bc, double setobs, int * xi_o,int border,int ppoint_x, int ppoint_y, int ppoint_z){
   
-  int na0, na1,nad1,nad2, nao, is, ism, iss, i, j, k;
+  int na0, na1, nao, is, ism, iss, i, j, k;
     
   //double rmin1 = (double)N1/4.0-3.0;//(double)N1/6.0;
   //double rmin2 = (double)N1/6.0;
@@ -2409,8 +2391,6 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 	      na0 = 2*I4(i, j, k, is);
 	      //int na = 2*I3(i, j, k);
 	      na1 = na0+1;
-	      nad1 = na0+1;
-	      nad2 = na0+2;
 	      nao = I3(i, j, k);
 	      if(is<NS)    {
 		xi[na0] = 0.0;      //(k+1)+(j+1)*10.0+(i+1)*100.0
@@ -2532,8 +2512,8 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 		  xi[na0] = 0.0;
 		}
 	    
-		data[nad1] = xi[na0];
-		data[nad2] = xi[na1];
+		_data[na0  ] = xi[na0];
+		_data[na0+1] = xi[na1];
 	      }
 	  
 	      else{  //is>=NS
@@ -2565,13 +2545,13 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
   } //#pragma acc data
 #endif 
   
-  printf("%g",data[5]);
+  printf("%g", _data[4]);
   return;
 }
 
-void virtualevolv(float * data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, int nf[4], double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
+void virtualevolv(float *_data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, int nf[4], double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
-  int isa, isb, i, j, k, na0, nas, na1, nad1, nad2, nb, u,v, naij, nao, indm[2];
+  int isa, isb, i, j, k, na0, nas, na1, nb, u,v, naij, nao, indm[2];
   float sigr, sigi,dE,dE_imag;
   dE=0.0;
   dE_imag = 0.0;
@@ -2594,11 +2574,9 @@ void virtualevolv(float * data, float *data2, float * sigmav, double * DD, doubl
 		  na0 = 2*I4(i, j, k, isb);
 		  if(isa >= NS )
 		    {
-		      nad1 = na0+1;
-		      nad2 = na0+2;
 		      nb = I5V(i, j, k, isb, isa-NS);
-		      C4(data2, i,j,k, isa, 0) += data[nad1] * DD[nb];
-		      C4(data2, i,j,k, isa, 1) += data[nad2] * DD[nb];
+		      C4(data2, i,j,k, isa, 0) += _data[na0  ] * DD[nb];
+		      C4(data2, i,j,k, isa, 1) += _data[na0+1] * DD[nb];
 		    }
 		}
 	}
@@ -2644,8 +2622,6 @@ void virtualevolv(float * data, float *data2, float * sigmav, double * DD, doubl
 		nas = 2*I4(i, j, k, isa-NS);
 		nao = I3(i, j, k);
 		na1 = na0+1;
-		nad1 = na0+1;
-		nad2 = na0+2;
 		naij = I4(i, j, k, u + v*ND);
 		sigr = -(C4(data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);
 		sigi = -(C4(data2, i,j,k, isa, 1)/(N1*N2*N3));
@@ -2721,8 +2697,8 @@ void virtualevolv(float * data, float *data2, float * sigmav, double * DD, doubl
 			  }//else
 		      }//xi_bc[na0]==0.0
 		  }//it < NT-NTD
-		data[nad1] = xi[na0];
-		data[nad2] = xi[na1];
+		_data[na0  ] = xi[na0];
+		_data[na0+1] = xi[na1];
 	      }// end ijk
       } /* end u v */
 	
@@ -4243,7 +4219,10 @@ void Indv2mat(int i, int ind[2])
   }
 }
 
-float Energy_calculation(double *fx, double *fy, double *fz, double eps[NS][ND][ND], double epsv[NV][ND][ND],double C11, double C12, double C44, float *data,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
+float Energy_calculation(double *fx, double *fy, double *fz, double eps[NS][ND][ND],
+			 double epsv[NV][ND][ND],double C11, double C12, double C44,
+			 float *_data,double interface_n[ND],
+			 int ppoint_x, int ppoint_y, int ppoint_z)
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
@@ -4366,20 +4345,20 @@ float Energy_calculation(double *fx, double *fy, double *fz, double eps[NS][ND][
 #pragma acc loop        
 #endif 
 	 
-  for (u=0; u<ND; u++) {
-  for (v=0; v<ND; v++) {
-  for (i=0; i<N1; i++) {
-  for (j=0; j<N2; j++) {
-  for (k=0; k<N3; k++) {
-  nfreq = k + j*N3 + i*N2*N3;
-  index = 2*(nfreq + (NS+u*ND+v)*N1*N2*N3)+1;
-  strainv_real[u][v][i][j][k] = data[index];
-  strainv_imag[u][v][i][j][k] = data[index+1];
-}
-}
-}
-}
-}
+    for (u=0; u<ND; u++) {
+      for (v=0; v<ND; v++) {
+	for (i=0; i<N1; i++) {
+	  for (j=0; j<N2; j++) {
+	    for (k=0; k<N3; k++) {
+	      nfreq = k + j*N3 + i*N2*N3;
+	      index = 2*(nfreq + (NS+u*ND+v)*N1*N2*N3);
+	      strainv_real[u][v][i][j][k] = _data[index  ];
+	      strainv_imag[u][v][i][j][k] = _data[index+1];
+	    }
+	  }
+	}
+      }
+    }
 #ifdef UGPU 
 }    //#pragma acc kernels 
 #endif   
@@ -4684,7 +4663,7 @@ return(en);
 }
 
 
-double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float *data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *_datag,float * data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
+double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float *data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *_datag,float *_data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
 {
   int isa,is, i, j, k, na0,na1;
   double gamma;

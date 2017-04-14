@@ -638,7 +638,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
   }/*k1*/	
 }
 
-float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *xi, int nsize, double sigma[N1][N2][N3][ND][ND], double S11, double S12, double S44, double mu,float energy_in3,float *energy_in4, float *strain_average,int border,double interface_n[ND], int ppoint[3])
+float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *xi, int nsize, double sigma[N1][N2][N3][ND][ND], double S11, double S12, double S44, double mu,float *energy_in4, float *strain_average,int border,double interface_n[ND], int ppoint[3])
 {
   
   int i,j,k,l,is,k1,k2,k3,u,v;
@@ -4359,11 +4359,10 @@ int main(void)
 	}
 	energy_intotal = 0.0;
 	energy_in =0.0;
-	energy_in3 = 0.0;
 	energy_in4 = 0.0;
 	strain_average = 0.0;
           
-	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint);
+	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,&energy_in4, &strain_average,border,interface_n,ppoint);
 	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,interface_n,ppoint[0],ppoint[1],ppoint[2]);
 	vflag=0;
 	  
@@ -4613,7 +4612,7 @@ int main(void)
   
 	      if (1) {//checkpass==1
 		energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],ppoint[2]);
-		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint);
+		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,&energy_in4, &strain_average,border,interface_n,ppoint);
 		energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 		energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
 		fprintf(ofcheckEbarrier, "%d   %lf   %lf\n",it_checkEbarrier,fabs(energy_Residual),fabs(energy_intotal));
@@ -4622,7 +4621,7 @@ int main(void)
 		/*   fprintf(ofzEdensity, "zone   I = 25\n");
 		     for (k=ppoint[2]-12;k<ppoint[2]+13 ; k++) {
 		     energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],k);
-		     energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],k);
+		     energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],k);
 		     if (k==ppoint[2]) {
 		     energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 		     }else{

@@ -43,8 +43,10 @@ WTime(void)
 #define D4(data, i,j,k,m) (data[I4(i,j,k,m)])
 #define D5(data, i,j,k,m,n) (data[I5(i,j,k,m,n)])
 
-#define DATABETA(k1,k2,k3,i,j, c) C4(databeta, k1,k2,k3, i + j*ND, c)
-#define DATAEPS(k1,k2,k3,i,j, c)  C4(dataeps, k1,k2,k3, i + j*ND, c)
+#define DATABETA(k1,k2,k3,i,j, c)   C4(databeta , k1,k2,k3, i + j*ND, c)
+#define DATAEPS(k1,k2,k3,i,j, c)    C4(dataeps  , k1,k2,k3, i + j*ND, c)
+#define DATAEPSD(k1,k2,k3,i,j, c)   C4(dataepsd , k1,k2,k3, i + j*ND, c)
+#define DATASIGMA(k1,k2,k3,i,j, c)  C4(datasigma, k1,k2,k3, i + j*ND, c)
 
 #define FF(k1,k2,k3,ka,i,j)  D4(FF , k1,k2,k3, ka + i*NS  + j*NS*ND)
 #define FFv(k1,k2,k3,ka,i,j) D4(FFv, k1,k2,k3, ka + i*NV  + j*NV*ND)
@@ -831,7 +833,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,k1,k2,k3,na,na0,y;
+  int i,j,k,l,m,k1,k2,k3,na0,y;
   int na11, na12,na13, na22, na23, na33;
   int is;
   double C[ND][ND][ND][ND];
@@ -885,12 +887,10 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	for(k1=0;k1<N1;k1++){
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
-	      na = 2*(k1*N2*N3 + k2*N3 + k3 + i*N1*N2*N3+j*N1*N2*N3*ND);
-	      if (is<NS){
-		dataepsd[na  ] += eps[is][i][j] * C4(xi, k1,k2,k3, is, 0);
-	      }
-	      if (is >=NS){
-		dataepsd[na] += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0);
+	      if (is < NS) {
+		DATAEPSD(k1,k2,k3,i,j, 0) += eps[is][i][j]     * C4(xi, k1,k2,k3, is, 0);
+	      } else {
+		DATAEPSD(k1,k2,k3,i,j, 0) += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0);
 	      }
 	    }
 	  }
@@ -903,14 +903,12 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
       for(k1=0;k1<N1;k1++){
 	for(k2=0;k2<N2;k2++){
 	  for(k3=0;k3<N3;k3++){
-	    na = 2*(k1*N2*N3 + k2*N3 + k3 + i*N1*N2*N3+j*N1*N2*N3*ND);
 	    for (k=0;k<ND;k++){
 	      for (l=0;l<ND;l++){
-		na0 = 2*(k1*N2*N3 + k2*N3 + k3 + k*N1*N2*N3+l*N1*N2*N3*ND);
-		datasigma[na] += C[i][j][k][l]*(DATAEPS(k1,k2,k3,k,l, 0)-dataepsd[na0]);
+		DATASIGMA(k1,k2,k3,i,j, 0) += C[i][j][k][l]*(DATAEPS(k1,k2,k3,k,l, 0) - DATAEPSD(k1,k2,k3,k,l, 0));
 	      }
 	    }
-	    avesigma[i][j] += datasigma[na]/N1/N2/N3;
+	    avesigma[i][j] += DATASIGMA(k1,k2,k3,i,j, 0)/(N1*N2*N3);
 	  }
 	}
       }
@@ -939,8 +937,8 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	    fprintf(of5,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",
 		    k1,k2,k3,sigmav[na11], sigmav[na12], sigmav[na13],
 		    sigmav[na22], sigmav[na23], sigmav[na33],
-		    datasigma[na11], datasigma[na12], datasigma[na13],
-		    datasigma[na22], datasigma[na23], datasigma[na33]);
+		    DATASIGMA(k1,k2,k3,0,0, 0), DATASIGMA(k1,k2,k3,0,1, 0), DATASIGMA(k1,k2,k3,0,2, 0), 
+		    DATASIGMA(k1,k2,k3,1,1, 0), DATASIGMA(k1,k2,k3,1,2, 0), DATASIGMA(k1,k2,k3,2,2, 0));
 	  }
 	}
       }

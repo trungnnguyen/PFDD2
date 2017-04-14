@@ -57,6 +57,7 @@ WTime(void)
 #define GG(k1,k2,k3,ka,kb)   D5(GG , k1,k2,k3, ka, kb)
 
 #define DATA(k1,k2,k3,m, c)  C4(data , k1,k2,k3,m, c)
+#define DATA2(k1,k2,k3,m, c) C4(data2, k1,k2,k3,m, c)
 #define XI(k1,k2,k3,m, c)    C4(xi   , k1,k2,k3,m, c)
 #define XI_BC(k1,k2,k3,m, c) C4(xi_bc, k1,k2,k3,m, c)
 
@@ -1256,8 +1257,6 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
   //double yita = 2./2./(1-0.34); //for edge
   //   yita = 0.5 * 2.; //for screw *2 ~~d = 2b
   
-   
-         
   FILE *Order_Param1;
   Order_Param1 = fopen("Order_Parameter1.txt","w");
   fprintf(Order_Param1,"x,y,z,Order_Parameter\n");
@@ -1266,124 +1265,111 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
   fprintf(Order_Param2,"x,y,z,Order_Parameter\n");
 #ifdef GPUU  
 #pragma acc data copy(data[0:2*(NSV)*(N1)*(N2)*(N3)],xi[0:2*(NSV)*(N1)*(N2)*(N3)-1],xi_bc[0:2*(NSV)*(N1)*(N2)*(N3)-1],data_CUFFT[0:(NSV)*(N1)*(N2)*(N3)][0:1]) copyin(xi_o[0:(N1)*(N2)*(N3)])  
-   
-  {
 #endif 
-  
-  
+
 #ifdef GPUU 
 #pragma acc kernels
-    {
 #endif  
-  
-      for(is=0;is<NSV;is++)  {
+  {  
+    for(is=0;is<NSV;is++)  {
 #ifndef _OPENACC
-	printf("initial data for system %d\n",is);
+      printf("initial data for system %d\n",is);
 #endif
-	for(i=0;i<N1;i++) {	
-	  for(j=0;j<N2;j++)	{
-	    for(k=0;k<N3;k++){		
-	      na0 = 2*I4(i, j, k, is);
-	      //int na = 2*I3(i, j, k);
-	      na1 = na0+1;
-	      nao = I3(i, j, k);
-	      if(is<NS)    {
-		xi[na0] = 0.0;      //(k+1)+(j+1)*10.0+(i+1)*100.0
-		xi[na1] = 0.0;
-		xi_bc[na0] = 1.0;    // 1 non-evolve  0 evolve
-		xi_bc[na1] = 1.0;
+      for(i=0;i<N1;i++) {	
+	for(j=0;j<N2;j++)	{
+	  for(k=0;k<N3;k++){		
+	    na0 = 2*I4(i, j, k, is);
+	    //int na = 2*I3(i, j, k);
+	    na1 = na0+1;
+	    nao = I3(i, j, k);
+	    if(is<NS)    {
+	      XI(i,j,k,is, 0) = 0.0;      //(k+1)+(j+1)*10.0+(i+1)*100.0
+	      XI(i,j,k,is, 1) = 0.0;
+	      XI_BC(i,j,k,is, 0) = 1.0;    // 1 non-evolve  0 evolve
+	      XI_BC(i,j,k,is, 1) = 1.0;
 	    
-		ism = (is)/NS1;
-		iss = is%NS1;
-	    
-	    
-		//1st material
-		if(ism==0){
-		  if(iss==0){
-		
-		    if (i==ppoint_x+0) {
-		      if (xi_o[nao]==0) {
-			//		    if(k>0 && k<N3/4)
-			if(k>0 && k<768) 
-			  { 
-			    xi[na0] = 0.0;
-			  }
-			//		    if(k>=N3/4 && k<N3/2 )
-			if(k>=768 && k<1024 )
-			  { 
-			    xi[na0] = 1.0;
-			  }
-		      }                 
-		    }           
-		  }
-		  /*  if (iss==1) {
-		      if (i==ppoint_x) {
-		  
-		      if (k>=ppoint_z-40&&k<ppoint_z-3) {
-		      xi[na0] = 1.0;
+	      ism = is / NS1;
+	      iss = is % NS1;
+	    	    
+	      //1st material
+	      if (ism==0) {
+		if (iss==0) {
+		  if (i==ppoint_x+0) {
+		    if (xi_o[nao]==0) {
+		      //		    if(k>0 && k<N3/4)
+		      if(k>0 && k<768) { 
+			xi[na0] = 0.0;
 		      }
-		      if (k>=ppoint_z-3) {//k<=border&&k>=ppoint_z-3
+		      //		    if(k>=N3/4 && k<N3/2 )
+		      if(k>=768 && k<1024 ) { 
+			xi[na0] = 1.0;
+		      }
+		    }                 
+		  }           
+		}
+		/*  if (iss==1) {
+		    if (i==ppoint_x) {
+		  
+		    if (k>=ppoint_z-40&&k<ppoint_z-3) {
+		    xi[na0] = 1.0;
+		    }
+		    if (k>=ppoint_z-3) {//k<=border&&k>=ppoint_z-3
+		    xi_bc[na0] = 0.0;
+		    xi_bc[na1] = 0.0;
+		    }
+                  
+		    }
+		    }
+		*/ 
+		fprintf(Order_Param1,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
+	      }
+	    
+	      //2nd material
+	      if (ism==1) {
+		if (iss==0) {
+		  if (i==ppoint_x+0) {
+		    if (xi_o[nao]==1) {
+		      //		   if(k>=N3/2 && k<3*N3/4)
+		      if (k>=1024 && k<1280) { 
+			xi[na0] = 1.0;
+		      }
+		      //		    if(k>=3*N3/4 && k<N3)
+		      if (k>=1280 && k<2048) { 
+			xi[na0] = 0.0;
+		      }
+		    }
+		    /*  if ((xi_o[nao]==1 && xi_o[I3(i, j, k-1]==0) &&(k!=0&&i!=0)) {
+			#ifndef _OPENACC
+			printf("residual here, i=%d, j=%d, k=%d,is=%d\n",i,j,k,is);
+			#endif
+			xi[na0] = 0.4737370342414563;//Cu/Ni  0.9716099719347492;//Au/Ag  1.0292195725507935;//Ag/Au  2.110875713152033;//Ni/Cu   0.483474845511;//Al/Pt  2.068359934927055;//Pt/Al
+                    
+			} */
+		  }
+		}
+		if (iss==1) {
+		  if (i==ppoint_x) {
+		    if (k>border&&k<N3-2) {
 		      xi_bc[na0] = 0.0;
 		      xi_bc[na1] = 0.0;
-		      }
-                  
-		      }
-		      }
-		  */ 
-		  fprintf(Order_Param1,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
-	     
-		}
-	    
-		//2nd material
-		if(ism==1){
-		  if(iss==0){
-		    if (i==ppoint_x+0) {
-		      if (xi_o[nao]==1) {
-			//		   if(k>=N3/2 && k<3*N3/4)
-			if(k>=1024 && k<1280)
-			  { 
-			    xi[na0] = 1.0;
-			  }
-			//		    if(k>=3*N3/4 && k<N3)
-			if(k>=1280 && k<2048)
-			  { 
-			    xi[na0] = 0.0;
-			  }
-		      }
-		      /*  if ((xi_o[nao]==1 && xi_o[I3(i, j, k-1]==0) &&(k!=0&&i!=0)) {
-			  #ifndef _OPENACC
-			  printf("residual here, i=%d, j=%d, k=%d,is=%d\n",i,j,k,is);
-			  #endif
-			  xi[na0] = 0.4737370342414563;//Cu/Ni  0.9716099719347492;//Au/Ag  1.0292195725507935;//Ag/Au  2.110875713152033;//Ni/Cu   0.483474845511;//Al/Pt  2.068359934927055;//Pt/Al
-                    
-			  } */
 		    }
-		  }
-		  if (iss==1) {
-		    if (i==ppoint_x) {
-		      if (k>border&&k<N3-2) {
-			xi_bc[na0] = 0.0;
-			xi_bc[na1] = 0.0;
-		      }
                   
-		    }
 		  }
-		  fprintf(Order_Param2,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
 		}
+		fprintf(Order_Param2,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
+	      }
+	   
+	      //end inclined plane 
 	    
+	      // one screw dislocation, for xn = (001), xb = (010)
+	      /*if(k==N3/2){
+		if(i<N1/2){
+		xi[na0] = 1.0;
+		}
+		}*/ //end of one dislocation
 	    
-		//end inclined plane 
-	    
-	    
-		// one screw dislocation, for xn = (001), xb = (010)
-		/*if(k==N3/2){
-		  if(i<N1/2){
-		  xi[na0] = 1.0;
-		  }
-		  }*/ //end of one dislocation
-	    
-		// random obstacles
-		/*		if(iss == 0 && xi_bc[na0] == 0.0){
+	      // random obstacles
+	      /*		if(iss == 0 && xi_bc[na0] == 0.0){
 				double obs = 1.0 * (rand()/((double)RAND_MAX + 1));
 				if(obs < setobs){
 				xi_bc[na0] = 1.0;
@@ -1400,53 +1386,32 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 				}
 				}    */    //end of random obstacles
 	    
-		/* Set BC according to material type */
+	      /* Set BC according to material type */
 	    
-		if(ism != xi_o[nao]){
-		  xi_bc[na0] = 1.0;
-		  xi[na0] = 0.0;
-		}
+	      if(ism != xi_o[nao]){
+		XI_BC(i,j,k,is, 0) = 1.0;
+		XI(i,j,k,is, 0) = 0.0;
+	      }
 	    
-		data[na0  ] = xi[na0];
-		data[na0+1] = xi[na1];
-	      }
-	  
-	      else{  //is>=NS
-		if(xi_o[nao] == 0) xi_bc[na0] = 1.0;
-		else xi_bc[na0] = 0.0;
-	      }
+	      DATA(i,j,k,is, 0) = XI(i,j,k,is, 0);
+	      DATA(i,j,k,is, 1) = XI(i,j,k,is, 1);
+	    } else {  //is>=NS
+	      if(xi_o[nao] == 0) XI_BC(i,j,k,is, 0) = 1.0;
+	      else XI_BC(i,j,k,is, 0) = 0.0;
 	    }
 	  }
-      
-        
-      
-		     
-		 
-		  
-      
-      
 	}
-    
-    
+      
       }
-  
-  
-  
-#ifdef GPUU 
-    } //#pragma acc kernels
-#endif
-  
-#ifdef GPUU 
-  } //#pragma acc data
-#endif 
+    }
+  } // acc  
   
   printf("%g", data[4]);
-  return;
 }
 
 void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
-  int isa, isb, i, j, k, na0, nas, na1, u,v, naij, nao, indm[2];
+  int isa, isb, i, j, k, u,v, naij, nao, indm[2];
   float sigr, sigi,dE,dE_imag;
   dE=0.0;
   dE_imag = 0.0;
@@ -1464,10 +1429,9 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
       for(i=0;i<N1;i++) {
 	for(j=0;j<N2;j++) {
 	  for(k=0;k<N3;k++) {
-	    na0 = 2*I4(i, j, k, isb);
 	    if(isa >= NS) {
-	      C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[I5V(i, j, k, isb, isa-NS)];
-	      C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[I5V(i, j, k, isb, isa-NS)];
+	      DATA2(i,j,k, isb, 0) += DATA(i,j,k, isb, 0) * DD[I5V(i, j, k, isb, isa-NS)];
+	      DATA2(i,j,k, isb, 1) += DATA(i,j,k, isb, 1) * DD[I5V(i, j, k, isb, isa-NS)];
 	    }
 	  }
 	}
@@ -1476,31 +1440,11 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
     }
   }
 
-	
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
-
 #ifdef USE_CUFFT
 #pragma acc data copy(data2[0:2*N1*N2*N3*NSV])
 #pragma acc host_data use_device(data2)
 #endif
   fft_backward(data2, NSV);	/* inverse FFT*/
-	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT  	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
   //printf("virtual calculation");
   for(u=0;u<ND;u++)
@@ -1512,34 +1456,30 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
 	  for(j=0;j<N2;j++)
 	    for(k=0;k<N3;k++)
 	      {
-		na0 = 2*I4(i, j, k, isa);
-		nas = 2*I4(i, j, k, isa-NS);
 		nao = I3(i, j, k);
-		na1 = na0+1;
 		naij = I4(i, j, k, u + v*ND);
-		sigr = -(C4(data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);
-		sigi = -(C4(data2, i,j,k, isa, 1)/(N1*N2*N3));
-		sigmav[nas] = sigr;
-		sigmav[nas+1] = sigi;
+		sigr = -(DATA2(i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);
+		sigi = -(DATA2(i,j,k, isa, 1)/(N1*N2*N3));
+		C4(sigmav, i,j,k, isa-NS, 0) = sigr;
+		C4(sigmav, i,j,k, isa-NS, 1) = sigi;
 		if(it < NT-NTD)
 		  {
-		    if(xi_bc[na0]==0.0)
+		    if (XI_BC(i,j,k, isa, 0) == 0.0)
 		      {
 					
 			//	printf("nam= %d, u=%d, v=%d, dE1=%e, dE2=%e, dE3=%e\n",xi_o[nao],u,v,data2[nad1]/(N1*N2*N3),II[naij],-sigmal[naij]);
 			if(xi_o[nao] == -1)
 			  {
 			    if(it==NT-NTD-1 && i==0 && j==0 && k>N3/2)
-			      printf("%d (%d,%d,%d) %e %e %e \n",isa,i,j,k,C4(data2, i,j,k, isa, 0)/(N1*N2*N3), -sigmal[naij],-CDv*(C4(data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]));
-			    xi[na0] = xi[na0]-CDv*(C4(data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);///(ceil((it)/100)+1);
-			    xi[na1] = xi[na1]-CDv*(C4(data2, i,j,k, isa, 0))/(N1*N2*N3);///(ceil((it)/100)+1);
-			    //	  printf("%d %lf %lf\n",ceil((itt+1)/10),CDv/ceil((itt+1)/10),xi[na0]);
-			    // xi_sum[na] = xi_sum[na] + xi[na0];
-			    //xi_sum[na+1] = xi_sum[na+1] + xi[na1];
-			    if(fabs(sigr) > 1E-11)
-			      {
-				vflag = 1;
-			      }
+			      printf("%d (%d,%d,%d) %e %e %e \n",isa,i,j,k,DATA2(i,j,k, isa, 0)/(N1*N2*N3), -sigmal[naij],-CDv*(DATA2(i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]));
+			    XI(i,j,k, isa, 0) -= CDv*(DATA2(i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);///(ceil((it)/100)+1);
+			    XI(i,j,k, isa, 1) -= CDv*(DATA2(i,j,k, isa, 0))/(N1*N2*N3);///(ceil((it)/100)+1);
+			    //	  printf("%d %lf %lf\n",ceil((itt+1)/10),CDv/ceil((itt+1)/10),XI(i,j,k, isa, 0));
+			    // xi_sum[na  ] += XI(i,j,k, isa, 0);
+			    // xi_sum[na+1] += XI(i,j,k, isa, 1);
+			    if(fabs(sigr) > 1E-11) {
+			      vflag = 1;
+			    }
 			  }
 			else
 			  {
@@ -1549,20 +1489,20 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
 				if(dS[xi_o[nao]][indv][indv] > 0.0)
 				  {
 				    //printf("K<0!!! Material 0 should be softer\n");
-				    dE      = C4(data2, i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
-				    dE_imag = C4(data2, i,j,k, isa, 1)/(N1*N2*N3);
+				    dE      = DATA2(i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
+				    dE_imag = DATA2(i,j,k, isa, 1)/(N1*N2*N3);
 
-				    xi[na0] = xi[na0]+CDv*dE;
-				    xi[na1] = xi[na1]+CDv*dE_imag;
+				    XI(i,j,k, isa, 0) += CDv*dE;
+				    XI(i,j,k, isa, 1) += CDv*dE_imag;
 				  }
 				else
 				  {
 				    //printf("K>0!!! Material 0 should be stiffer\n");
-				    dE      = C4(data2, i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
-				    dE_imag = C4(data2, i,j,k, isa, 1)/(N1*N2*N3);
+				    dE      = DATA2(i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
+				    dE_imag = DATA2(i,j,k, isa, 1)/(N1*N2*N3);
                                             
-				    xi[na0] = xi[na0]-CDv*dE;
-				    xi[na1] = xi[na1]-CDv*dE_imag;
+				    XI(i,j,k, isa, 0) -= CDv*dE;
+				    XI(i,j,k, isa, 1) -= CDv*dE_imag;
 				  }
 
 				//mark 
@@ -1580,10 +1520,10 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
 			    else if(ZLdC[xi_o[nao]][indv]==2)
 			      {	//condition from dC
 				Indv2mat(prop[xi_o[nao]][indv], indm);
-				xi[na0] = -xi[2*I4(i, j, k, indm[0]+ND*indm[1]+NS)  ];
-				xi[na1] = -xi[2*I4(i, j, k, indm[0]+ND*indm[1]+NS)+1];
+				XI(i,j,k, isa, 0) = -XI(i, j, k, indm[0]+ND*indm[1]+NS, 0);
+				XI(i,j,k, isa, 1) = -XI(i, j, k, indm[0]+ND*indm[1]+NS, 1);
 			      }
-			    if(fabs(xi[na0])>1E10)
+			    if(fabs(XI(i,j,k, isa, 0))>1E10)
 			      {
 				printf("u=%d, v=%d, ZLdC= %d, dE1=%e, dE2= %e, dE3=%e \n",u,v,ZLdC[xi_o[nao]][indv],C4(data2, i,j,k, isa, 0)/(N1*N2*N3),II[naij],-sigmal[naij]);
 				it=NT-1;
@@ -1591,12 +1531,10 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
 			  }//else
 		      }//xi_bc[na0]==0.0
 		  }//it < NT-NTD
-		data[na0  ] = xi[na0];
-		data[na0+1] = xi[na1];
+		DATA(i,j,k, isa, 0) = XI(i,j,k, isa, 0);
+		DATA(i,j,k, isa, 1) = XI(i,j,k, isa, 1);
 	      }// end ijk
       } /* end u v */
-	
-  return;
 }
 	
 void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], double eps[NS][ND][ND], double * xi_bc, double * sigmal, int * xi_o)

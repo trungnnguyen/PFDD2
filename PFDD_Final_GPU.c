@@ -4011,7 +4011,8 @@ int main(void)
 {
   int i, j, k, it, it_plastic, itp, itp2, is, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
-  int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
+  int t_bwvirtualpf,border,it_checkEbarrier;
+  int ppoint[3];
   int checkvirtual;
   int isa, isb;
   static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
@@ -4120,9 +4121,9 @@ int main(void)
   t_bwvirtualpf = 1;
   checkvirtual = 0;
   border = N3*3/4;
-  ppoint_x = N1/2;//1 point penetration point on interface
-  ppoint_y = 0;
-  ppoint_z = border;
+  ppoint[0] = N1/2;//1 point penetration point on interface
+  ppoint[1] = 0;
+  ppoint[2] = border;
   it_checkEbarrier = 0;
   plastic_max =3000;//original:3000
 
@@ -4226,7 +4227,7 @@ int main(void)
   /* Set axis transformation matrix */
   Amatrix(AA, theta1);
   /* Set orientation for the domain */
-  setDorient(xi_o,&d_f,&d_s,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
+  setDorient(xi_o,&d_f,&d_s,border,interface_n,ppoint[0],ppoint[1],ppoint[2]);
   /* Set deltaS matrix */	
   dSmat(Cm, Sm, AA,  KK, dS, ZLdC,prop,theta1);
   /*Set the slip systems frequency and matrix BB */	
@@ -4273,7 +4274,7 @@ int main(void)
        #pragma acc update host(data)
        #endif */ 
     
-    initial(data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
+    initial(data, xi, xi_bc, setobs, xi_o,border,ppoint[0],ppoint[1],ppoint[2]);
       
     /*#ifdef GPUU
       #pragma acc update device(data)
@@ -4319,7 +4320,7 @@ int main(void)
   pcountgamma = &countgamma;
     
   //mark setstress
-  setstress(sigma,a_s,a_f,Cm,border,ppoint_x,ppoint_y,ppoint_z,interface_n);
+  setstress(sigma,a_s,a_f,Cm,border,ppoint[0],ppoint[1],ppoint[2],interface_n);
     
   for(itp2=0;itp2<NP2;itp2++){
     /* Applied stress*/
@@ -4362,8 +4363,8 @@ int main(void)
 	energy_in4 = 0.0;
 	strain_average = 0.0;
           
-	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],ppoint[2]);
+	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,interface_n,ppoint[0],ppoint[1],ppoint[2]);
 	vflag=0;
 	  
 #ifdef USE_CUFFT
@@ -4412,7 +4413,7 @@ int main(void)
 	  if (it==NT-1) {
 	    printf("go till here!!!\n");
 	  }
-	  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, mc.C11, mc.C12, mc.C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
+	  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, mc.C11, mc.C12, mc.C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
 	  /*average strain*/
 	  for(i=0;i<ND;i++){
 	    for (j=0;j<ND;j++){
@@ -4495,9 +4496,9 @@ int main(void)
 	// #pragma acc data copyin(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3]) 
 	// {
 	//mark  energy_in
-	energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],ppoint[2]);
 	//  }
-	energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+	energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 	energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
 	if ((it%1==0)||(it==NT-NTD-1)||(it==NT-NTD)) {
 	  fprintf(ofEnergy,"%d    %lf   %lf   %lf   %lf   %lf   %lf\n",it,energy_in,energy_in2,energy_in3,energy_in4,energy_Residual,energy_intotal);
@@ -4545,7 +4546,7 @@ int main(void)
 	    checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
 	    printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
 	    it_plastic = it_plastic + 1;
-	    interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint_x,ppoint_y,ppoint_z,mc.C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
+	    interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint[0],ppoint[1],ppoint[2],mc.C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
 	    for (isa=0; isa<NSV; isa++) {
 	      for (i=0; i<N1; i++) {
 		for (j=0; j<N2; j++) {
@@ -4611,25 +4612,25 @@ int main(void)
 	      fft_backward(datag, NS);	/* inverse FFT*/  
   
 	      if (1) {//checkpass==1
-		energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
-		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-		energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+		energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],ppoint[2]);
+		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],ppoint[2]);
+		energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 		energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
 		fprintf(ofcheckEbarrier, "%d   %lf   %lf\n",it_checkEbarrier,fabs(energy_Residual),fabs(energy_intotal));
                   
 		//mark check z direction energy density distribution
 		/*   fprintf(ofzEdensity, "zone   I = 25\n");
-		     for (k=ppoint_z-12;k<ppoint_z+13 ; k++) {
-		     energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,k);
-		     energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,k);
-		     if (k==ppoint_z) {
-		     energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+		     for (k=ppoint[2]-12;k<ppoint[2]+13 ; k++) {
+		     energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],k);
+		     energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],k);
+		     if (k==ppoint[2]) {
+		     energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 		     }else{
 		     energy_Residual = 0.0;
 		     }
                        
-		     energy_intotal_z[k+12-ppoint_z] = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
-		     fprintf(ofzEdensity, "%d   %lf   %lf\n",k+12-ppoint_z,energy_Residual,energy_intotal_z[k+12-ppoint_z]);
+		     energy_intotal_z[k+12-ppoint[2]] = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
+		     fprintf(ofzEdensity, "%d   %lf   %lf\n",k+12-ppoint[2],energy_Residual,energy_intotal_z[k+12-ppoint[2]]);
 		     }*/
 		  
                   
@@ -4646,7 +4647,7 @@ int main(void)
 	      fprintf(ofpfout, "zone   I = %d K = %d\n",N3,N1);
 	      for (i=0; i<N1; i++) {
 		for (k=0; k<N3; k++) {
-		  if ((interface_n[0]*(i-ppoint_x) + interface_n[1]*(0-ppoint_y) + interface_n[2]*(k-ppoint_z))<=0) {
+		  if ((interface_n[0]*(i-ppoint[0]) + interface_n[1]*(0-ppoint[1]) + interface_n[2]*(k-ppoint[2]))<=0) {
 		    is = 0;
 		  } else{
 		    is = 2;

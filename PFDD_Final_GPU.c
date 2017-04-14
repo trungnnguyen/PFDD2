@@ -261,1062 +261,6 @@ void Indv2mat(int i, int ind[2]);
 float minimum(float a[9]);
 float maximum(float a[9]);
 
-int main(void)
-{
-  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
-  int * pcountgamma;
-  int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
-  int checkvirtual;
-  int isa, isb;
-  static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
-  static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
-  double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
-  float *data, *data2, *datag, *databeta;
-  float *dataeps, *dataepsd, *datasigma, *sigmav;
-  double *f, *r;
-  double d1, d2, d3, size3,ir,beta2;
-  double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
-  double *BB;
-  double *FF;
-  double *DD;
-  double *GG;
-  double *FFv;
-  int Rv = 0,sizexi,sizexi_bc,countenergy,countstrain;
-  double setobs, gamma, gamma1[NS], gammalast;
-  float uq2,energy_in,energy_last,energy_in2,energy_in3,energy_in4,energy_intotal,strain_average,strain_last,energy_Residual;
-  //    float energy_intotal_z[25];
-  double theta1[NMAT][ND][ND], Cm[NMAT][3], Sm[NMAT][3], KK[NMAT][6][6], *II, AA[NMAT][ND][ND], dS[NMAT][6][6]; //Cm[0]: C11, Cm[1]: C12, Cm[2]: C44.
-  int *xi_o, ZLdC[NMAT][6],prop[NMAT][6];
-    
-  void frec (double *, double *, double *, double, double,double);  //frequency subroutine
-  void setfcc(double xn[NS][ND], double xb[NS][ND]);                //set slip systems
-  void set2D(double xn[NS][ND], double xb[NS][ND]);
-  void set3D1sys(double xn[NS][ND], double xb[NS][ND]);
-  void set3D2sys(double xn[NS][ND], double xb[NS][ND]);
-  void set3D4sys(double xn[NS][ND], double xb[NS][ND]);
-  void setq(double q[N1][N2][N3]);
-  void seteps(double eps[NS][ND][ND], double epsv[NV][ND][ND],double xn[NS][ND], double xb[NS][ND],double dslip2[NS], double AA[NMAT][ND][ND],double theta1[NMAT][ND][ND]);
-  void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], double eps[NS][ND][ND], double *, double *, int *);  //Calculate the resolved shear stress
-  void Bmatrix( double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
-		double , double , double , double, double, double, int *); //Interaction matrix
-  void Fmatrix( double *, double *, double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
-		double , double , double , double, double , double, int *,double theta1[NMAT][ND][ND]); /*needs to be called after function Bmatrix*/
-  float Energy_calculation(double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],double, double, double, float *,double interface_n[ND],int,int ,int);
-  float ResidualEnergy(double *, double interface_n[ND],int, int, int, double, double, double, double);
-  void Gmatrix (double *, double, double xb[NS][ND], double xn[NS][ND], double *, double *, double *);
-  float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *, int, double sigma[N1][N2][N3][ND][ND], double, double, double, double,float,float *, float *,int,double interface_n[ND],int, int, int);
-  void strain(float *, float *, float *, double *, double *, double epsv[NV][ND][ND], int nf[4], double, double, double, double, FILE *of3,int, int, double avepst[N1][N2][N3][ND][ND]);
-  void stress (float *, float *, float *, float *, double *, double eps[NS][ND][ND], double epsv[NV][ND][ND], double, double, double, FILE *of5, int, int, double avesigma[ND][ND],double theta1[NMAT][ND][ND], double slipdirection[ND], double xn[NS][ND],double *,double *,int,int,int,int,int); /*called after function strain*/
-  void in_virtual_void(int, float *, double *, double *, int *);
-  void in_virtual_cylinder(float *, double *, double *, int *);
-  void in_virtual_flat(float *, double *, double *, int *);
-  void in_virtual_homo(float *, double *, double *);
-  void in_virtual_cylinvoid(int, float *, double *, double *, int *);
-  void in_virtual_epitax(int, float *, double *, double *, int *);
-  void initial(float *, double *, double *, double, int *,int,int,int,int);
-  void virtualevolv(float *, float *, float *, double *, double *, double *, double, double *, int, int nf[4], double, double, double, double, FILE *, int,int, int, double *, int *, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6]);
-  double plasticevolv(double *,double *,double CD2[NS],float,float *,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *, float *,double *,int,double,double,double,int);
-  void interfacevolv(double *, double *, double, double, double, double,double,double,double,int *,int,int,int,int,double, double, double, double * , int *,FILE *);
-  void calculateD4int(double, double, double Cm[NMAT][3], double theta1[NMAT][ND][ND], double xb[NS][ND], double xn[NS][ND], double interface_n[ND],double *, double *, double *, double *,double *,double *,double *);
-  int plasticconverge(double,double,int, int * testplastic, int *);
-  void nrerror(char error_text[]);
- 
-  void setorient(double theta1[NMAT][ND][ND]);
-  void Amatrix(double AA[NMAT][ND][ND], double theta1[NMAT][ND][ND]);
-  void setDorient(int *,double *,double *,int,double interface_n[ND],int,int,int);
-  void setMat(double Cm[NMAT][3], double Sm[NMAT][3], double b2[NS], double dslip2[NS], double , double, double, double, double);
-  void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND],  double KK[NMAT][6][6], double dS[NMAT][6][6], int ZLdC[NMAT][6],int prop[NMAT][6],double theta1[NMAT][ND][ND]);
-  float Imatrix(double *, double *, double KK[NMAT][6][6], double, double, double, int *,float,double interface_n[ND],int,int,int);
-  void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[NMAT][3],int,int,int,int,double interface_n[ND]);
-    
-  FILE *of2, *of3, *of4, *of5, *of6, *of7, *ofrho,*ofxi,*ofxi_bc, *ofxi1, *ofxi_bc1,*ofEnergy,*ofFinalXi_w,*ofpfv, *ofpfout, *ofresidual,*ofcheckEbarrier,*ofzEdensity;
-  //    FILE *ofFinalXi;
-  
-  /* data is offset by one respect to xi due to offset in fourn
-     data goes to fft and is repalced by its fft
-     xi is always in real space  and is updated every step*/
-#ifdef ACC_NVIDIA
-  acc_init(acc_device_nvidia);
-  acc_device_t device_type = acc_get_device_type();
-  if ( acc_device_nvidia == device_type ) {
-    int num_devices=acc_get_num_devices(acc_device_nvidia); 
-    acc_set_device_num(0,acc_device_nvidia); 
-      
-    printf("Number Of GPUs %d\n",num_devices);
-  }
-#endif 
-     
-  double tmstart = WTime();
-       
-  sizexi = 2*(NSV)*(N1)*(N2)*(N3);
-  sizexi_bc = 2*(NSV)*(N1)*(N2)*(N3);
-
-  data = array4d_alloc(N1, N2, N3, NSV);
-  data2 = array4d_alloc(N1, N2, N3, NSV);
-  datag = array4d_alloc(N1, N2, N3, NS);
-  databeta = array5d_alloc(N1, N2, N3, ND, ND);
-  dataeps = array5d_alloc(N1, N2, N3, ND, ND);
-  dataepsd = array5d_alloc(N1, N2, N3, ND, ND);
-  datasigma = array5d_alloc(N1, N2, N3, ND, ND);
-
-  sigmav = malloc(2*N1*N2*N3*NV*sizeof(float));
-  xi = malloc(2*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
-  xi_bc = malloc(2*NSV*N1*N2*N3*sizeof(double));
-  xi_sum = malloc(2*(N1)*(N2)*(N3)*sizeof(double));
-  fx = malloc((N1)*(N2)*(N3)*sizeof(double));
-  fy = malloc((N1)*(N2)*(N3)*sizeof(double));
-  fz = malloc((N1)*(N2)*(N3)*sizeof(double));
-  f = malloc((NS)*(N1)*(N2)*(N3)*sizeof(double));
-  r = malloc((ND)*sizeof(double));
-  BB = malloc((NS)*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
-  FF = malloc((NS)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
-  DD = malloc((NSV)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
-  FFv = malloc((NV)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
-  sigmal= malloc((N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
-  GG = malloc((2*(NS)*(NS)*(N1)*(N2)*(N3))*sizeof(double));
-  xi_o = malloc((N1)*(N2)*(N3)*sizeof(int));
-  II = malloc((ND)*(ND)*(N1)*(N2)*(N3)*sizeof(double));
-  penetrationstress = malloc(N2*sizeof(double));// only valid for N2 = 2
-  penetrationstress2 = malloc(N2*sizeof(double));// only valid for N2 = 2
-    
-  
-    
-    
-#define REAL 0
-#define IMAG 1
-    
-  /* print files */
-  of2 = fopen("stress-strain.dat","w");
-  of3 = fopen("strain.txt","w");
-  of4 = fopen("strain1D.dat","w");
-  of5 = fopen("stress.txt","w");
-  of6 = fopen("stress1D.dat","w");
-  of7 = fopen("virtual_strain.dat","w");
-  ofrho = fopen("rho.dat","w");
-  ofEnergy = fopen("checkEnergy.dat","w");
-  // ofFinalXi = fopen("FinalXi.dat","rb");
-  ofpfv = fopen("phasefield.dat","w");
-  ofpfout = fopen("pfout.dat","w");
-  ofresidual = fopen("residual.dat","w");
-  ofcheckEbarrier = fopen("checkEbarrier.dat","w");
-  ofzEdensity = fopen("zE.dat","w");
-	
-  choice=1; //choice=1 start w/o reading data; choice=2, read in xi and xi_bc.
-	
-  if((ofxi = fopen("xi.dat","r+")) == NULL){
-    if((ofxi = fopen("xi.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-  if((ofxi_bc = fopen("xi_bc.dat","r+")) == NULL){
-    if((ofxi_bc = fopen("xi_bc.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-    
-  if((ofxi1 = fopen("xi1.dat","r+")) == NULL){
-    if((ofxi1 = fopen("xi1.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1); 
-     
-    }	
-  }
-  if((ofxi_bc1 = fopen("xi_bc1.dat","r+")) == NULL){
-    if((ofxi_bc1 = fopen("xi_bc1.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-    
-  setobs = 0.05;//0.30; //set random obstacle density
-  //double setsigma = 0.000;//1.0E-2;//3E-3;//1.5E-1;//1.5E-3;//0.25;//0.3;//0.5/10;//0.7;//0.002;//0.001;//1.0;//0.04;//0.005;//1.0;//0.01; //2.3E-3;  //set stress
-  //double sigstep = 0.00;//1.0E-2;//0.0002; //set stress increment
-  gamma = 0.0;
-  gammalast = 0.0;
-  
-  //float uq1=1.0/3.0;
-  uq2=1.0;
-    
-  /* set # of time steps between virtualstrain evolve and phase field evolve */
-  t_bwvirtualpf = 1;
-  checkvirtual = 0;
-  border = N3*3/4;
-  ppoint_x = N1/2;//1 point penetration point on interface
-  ppoint_y = 0;
-  ppoint_z = border;
-  it_checkEbarrier = 0;
-  plastic_max =3000;//original:3000
-	
-  /* Set material constants for material 0 */
-  //C11 = 246.5E9; //Ni
-  //C12 = 147.3E9;
-  //C44 = 49.6E9;
-  C11=168.4E9;//Cu
-  C12=121.4E9;
-  C44=23.5E9;
-    
-    
-  //C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
-  //C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
-  //C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
-  //C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
-  //C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
-  //C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
-  //C11=107.3E9;//Al
-  //C12=60.9E9;
-  //C44=23.2E9;
-  //C11 = 346.7E9; //Pt
-  //C12 = 250.7E9;
-  //C44 = 48.E9;
-  //C11 = 227.1E9; //Pd
-  //C12 = 176.E9;
-  //C44 = 25.55E9;
-  //C11 = 580.E9; //Ir
-  //C12 = 242.E9;
-  //C44 = 169.E9;
-	
-  b = 0.256E-9;
-  dslip = 1.0;//4.0;//1.0;//N1/4/sqrt(3.0); /* in units of b*/
-  a_f = 0.361E-9; //for Cu
-  //a_f = 0.352E-9; //for Ni
-  //a_f = 0.392E-9; //for Pt
-  //a_f = 0.408E-9; //for Au
-  //a_f = 0.405E-9; //for Al
-  //a_f = 0.409E-9;//for Ag
-  //a_f = 0.380E-9;//for Rh
-  //a_f = 0.389E-9;//Pd
-  //a_f = 0.384E-9;//Ir
-    
-  a_s = 0.361E-9; //for Cu
-  //a_s = 0.352E-9; //for Ni
-  //a_s = 0.392E-9; //for Pt
-  //a_s = 0.408E-9; //for Au
-  //a_s = 0.405E-9; //for Al
-  //a_s = 0.409E-9;//for Ag
-  //a_s = 0.380E-9;//for Rh
-  //a_s = 0.389E-9;//Pd
-  //a_s = 0.384E-9;//Ir
-    
-  D00 = 0.0;
-  D11 = 0.0;
-  D10 = 0.0;
-  D01 = 0.0;
-  interface_n[0] = sqrt(3)/3.;//interface_n in global coordinate system
-  interface_n[1] = 0.0;
-  interface_n[2] = sqrt(6)/3.;
-  //slipdirection is not used in simulation
-  slipdirection[0] = -sqrt(2)/2.;//slipdirection in crystal coordinate system. Usually coincides with burgers vector for edge. Otherwise have both edge and screw component.
-  slipdirection[1] = 0.0;
-  slipdirection[2] = sqrt(2)/2.;
-  checkpass = 1; //mark: check whether the dislocation has enough energy to pass interface
-	
-  setMat( Cm,  Sm,  b2, dslip2, C11, C12, C44, b, dslip);  //set elastic constants, b2, dslip2 for different materials
-
-  if(MT==1){	//isotropic material
-    C11 = 2.0*C44+C12;  
-    printf("This is an isotropic material.\n");}
-  else if(MT==2) printf("This is a cubic material.\n");  //cubic material
-  else{
-    printf("Material type defined incorrectly. Please select an integer up to 2.\n");
-    exit(1);
-  }
-    
-    
-  mu = C44;//C44-(2.0*C44+C12-C11)/5.0;
-  //double ll = C12;//C12-(2.0*C44+C12-C11)/5.0;
-  //double mup= C11-C12-2*C44;
-  //double young = mu*(3*ll+2*mu)/(ll+mu);
-  //double nu = young/2.0/mu-1.0;
-    
-  S11 = 1./3.*(1/(C11+2*C12) + 2/(C11-C12));
-  S12 = 1./3.*(1/(C11+2*C12) - 1/(C11-C12));
-  S44 = 1/C44;
-    
-  //double L = (double)(N3);
-	
-  nf[0]=N1;
-  nf[1]=N1;
-  nf[2]=N2;
-  nf[3]=N3;
-  nsize = N1*N2*N3;
-    
-  d1 = 1;//10.0; //in unis of b so Fequencies are normalized
-  d2 = 1;//10.0;
-  d3 = 1;//10.0;
-    
-  gs = b2[0]*d1;  /*grid size*/
-
-  //double size = L*gs;
-  size3 = b2[0]*b2[0]*b2[0]*N1*N2*N3*d1*d2*d3;
-  for(is=0;is<NS;is++){
-    Asf2[is] = 0.0262;//the constant C in the code is C = Asf * C44 *dslip*b //
-  }
-  Asf2[0] = 0.0064659518668288441;
-  Asf2[1] = 0.0064659518668288441;
-  if (NS == 4) {
-    Asf2[2] = 0.013307048604153731;
-    Asf2[3] = 0.013307048604153731;
-  }
-  // for Cu, B = 0.1519499J/m^2, for Ni, B = 0.3127156J/m^2, don't forget normalize by C44
-  // normalized by C44_Ni, B_cu = 0.003063505420775763, B_ni = 0.0063047508507583193
-  // normalized by C44_Cu, B_cu = 0.0064659518668288441, B_ni = 0.013307048604153731
-  // normalized by C44_Au, B_au = 0.0073077793951971436, B_ag = 0.0077033035051546385
-  // normalized by C44_Ag, B_au = 0.006949554901960784, B_ag = 0.007325690588235293
-  // normalized by C44_Au, B_au = 0.0073077793951971436, B_al = 0.011566588369596448
-  // normalized by C44_Al, B_au = 0.0045831116465568297, B_al = 0.0072540457231736353
-    
-  printf ("core energy C = %lf \n", Asf2[0] * mu * dslip2[0]*b2[0]);
-	
-  for(is=0;is<NS;is++){
-    CD2[is] = 0.1;//1.0/100/2;//0.0000001; //1.0; /* dif coefficient*/
-  }
-  CDv = 0.00007;//0.2/1000;//1E-2;//2E-4;//0.02;//0.00002;//0.0002;//0.002;//0.2; //0.002; //0.2;//0.00000000002; //0.1; /*kinetic coeff for virtual strain*/
-  beta2=4E2;
-	
-  /* Set grain orientations */
-  setorient(theta1);
-  /* Set axis transformation matrix */
-  Amatrix(AA, theta1);
-  /* Set orientation for the domain */
-  setDorient(xi_o,&d_f,&d_s,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-  /* Set deltaS matrix */	
-  dSmat(Cm, Sm, AA,  KK, dS, ZLdC,prop,theta1);
-  /*Set the slip systems frequency and matrix BB */	
-    
-  //set2D(xn,xb);
-  // set3D2sys(xn,xb);
-    
-  set3D1sys(xn,xb);
-  seteps(eps, epsv, xn, xb, dslip2,AA,theta1);
-  //mark calculate D coefficients for interface evolve
-  calculateD4int(a_f, a_s, Cm, theta1, xb, xn, interface_n,&D00, &D01, &D10, &D11,&lam1,&lam2,&stressthreshold);
-  printf("D00 = %e, D11 = %e, D10 = %e, D01 = %e\n",D00,D11,D10,D01);
-  
-  printf("Frequencies\n");
-#ifdef  UGPU
-#pragma acc data create(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
-  {
-#endif  
-    frec(fx, fy, fz, d1, d2, d3);
-    	   
-    printf("Set interaction matrix\n");
-    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, C11, C12, C44, xi_o);
-    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  C11,  C12,  C44, xi_o,theta1);
-    printf("HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX\n");
-    //     getchar();
-    Gmatrix (GG, beta2, xb, xn, fx, fy, fz);
-    printf("HERE WE ARE AFTER CALLING THE GMATRIX\n");  
-  
-  
-    /*#ifdef GPU
-      #pragma acc kernels
-      {
-      #endif  
-      for(i=1;i<2*(NSV)*(N1)*(N2)*(N3)+1;i++)
-      {
-      data[i]=0.;
-      }
-    
-      #ifdef GPU
-      } //#pragma acc kernels
-      #endif 
-    */
-   
-    if(choice==1){
-      printf(" Generating initial data\n");
-      
-      
-     
-      
-      /* #ifdef GPUU
-	 #pragma acc update host(data)
-	 #endif */ 
-    
-    
-    
-      initial(data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
-      
-      /*#ifdef GPUU
-	#pragma acc update device(data)
-	#endif*/
-     
-    
-     
-      
-    }
-    
-  
-
-  
-    if(choice==2){
-      fread(xi,sizeof(double),sizexi,ofxi);
-      fread(xi_bc,sizeof(double),sizexi_bc,ofxi_bc);
-      rewind(ofxi);
-      rewind(ofxi_bc);
-      
-      for(is=0;is<NSV;is++){
-	for(i=0;i<N1;i++){
-	  for(j=0;j<N2;j++){
-	    for(k=0;k<N3;k++){
-	      na0 = 2*I4(i, j, k, is);
-	      data[na0  ] = xi[na0  ];
-	      data[na0+1] = xi[na0+1];
-	    }
-	  }
-	}
-      }							
-    }
-    
-    
- 
-  
-    
-    
-    setq(q);
-    
-   
-    
-    printf("start time step \n");
-    /* time step */
-    int test_energy[NT], test_strain[NT];     // test for countenergy and countstrain in time step
-    for (i = 0; i < NT; i++) {
-      test_energy[i] = 0;
-      test_strain[i] = 0;
-    }
-    
-    
-  
-    
-    
-    int * testplastic;    //test for plasticevolv
-    testplastic =  malloc(plastic_max*sizeof(int));
-    
-    pcountgamma = &countgamma;
-    
-    //mark setstress
-    setstress(sigma,a_s,a_f,Cm,border,ppoint_x,ppoint_y,ppoint_z,interface_n);
-    
-    for(itp2=0;itp2<NP2;itp2++){
-      /* Applied stress*/
-      /*
-	sigma[0][0]=0.0;
-	sigma[0][1]=0.001;
-	//	  if ((it+itp*NT)<20) sigma[0][2]=0.000;
-	//	  else sigma[0][2]=setsigma + itp*sigstep;//0.000;
-	sigma[0][2]=0.000;
-	sigma[1][0]=sigma[0][1];
-	sigma[1][1]=0.000;//setsigma + itp2*sigstep;//setsigma;//0.0;//setsigma + itp*sigstep;//0.000;
-	sigma[1][2]=0.0;//setsigma + itp2*sigstep;//0.0;//setsigma + itp*sigstep; //0.0001;
-	sigma[2][0]=sigma[0][2];
-	sigma[2][1]=sigma[1][2];
-	sigma[2][2]=setsigma + itp*sigstep;
-      */
-      resolSS(sigma,tau, eps, xi_bc, sigmal, xi_o);
-      for(itp=0;itp<NP;itp++){
-	countgamma=0;
-	countenergy=0;
-	countstrain=0;
-	for(it=0;it<NT;it++){
-	  printf("time step, %d %d %d\n", it, itp, itp2);
-	  printf("xi = %e\n",xi[2*NS*N1*N2*N3]);
-	  
-	  //mark input Xi via file
-          /*
-	    int index0,index1,index2;
-	    if (it==0) {
-	    for (i=0; i<sizexi; i++) {
-	    fread(&xi[i],sizeof(double),1,ofFinalXi);
-	    }
-	    for (is=0; is<NSV; is++) {
-	    for (i=0; i<N1; i++) {
-	    for (j=0; j<N2; j++) {
-	    for (k=0; k<N3; k++) {
-	    index0=2*(k+j*N3+i*N3*N2+is*N1*N2*N3);
-	    index1=index0+1;
-	    index2=index0+2;
-	    data[index1]=xi[index0];
-	    data[index2]=xi[index1];
-	    }
-	    }
-	    }
-	    }
-	    fclose(ofFinalXi);
-	    }*/
-                
-	  for(i=0;i<ND;i++){
-	    for(j=0;j<ND;j++){
-	      avesigma[i][j] = 0.0;
-	      for (k1=0; k1<N1; k1++) {
-		for (k2=0; k2<N2; k2++) {
-		  for (k3=0; k3<N3; k3++) {
-		    avepst[k1][k2][k3][i][j] = 0.0;
-		  }
-		}
-	      }
-	      avepsd[i][j] = 0.0;
-	      aveps[i][j] = 0.0;
-	    }
-	  }
-	  if(it!=0){
-	    energy_last=energy_intotal;
-	    strain_last=strain_average;
-	  }
-	  energy_intotal = 0.0;
-	  energy_in =0.0;
-	  energy_in2 = 0.0;
-	  energy_in3 = 0.0;
-	  energy_in4 = 0.0;
-	  strain_average = 0.0;
-          
-	  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	  energy_in2 = Imatrix(II, xi, KK, C11, C12, C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
-            
-          
-	  vflag=0;
-
-	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
-#ifdef USE_CUFFT
-#pragma acc data copy(data[0:2*N1*N2*N3*NSV])
-#pragma acc host_data use_device(data)
-#endif
-	  fft_forward(data, NSV);
-	    
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT		  
-  
-	  for (i=0; i < 2*N1*N2*N3*NSV; i++) {
-	    data2[i] = 0.;
-	  }
-	  for (i=0; i < 2*N1*N2*N3*NS; i++){
-	    datag[i] = 0.;
-	  }
-          
-	  for(isa=0;isa<NS;isa++){
-	    for(isb=0;isb<NSV;isb++){
-	      for(i=0;i<N1;i++){
-		for(j=0;j<N2;j++){
-		  for(k=0;k<N3;k++){
-		    na0 = 2*I4(i, j, k, isb);
-		    if(isa<NS){
-		      nb = I5(i, j, k, isa, isb);
-		      C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
-		      C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
-		      if(isb<NS){
-			C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
-			C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
-		      }
-		    }
-		  }
-		}
-	      }
-	    }
-	  }
-          
-          
-          
-          
-          
-	 
-          
-          
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
-#ifdef USE_CUFFT
-#pragma acc data copy(datag[0:2*N1*N2*N3*NS])
-#pragma acc host_data use_device(datag)
-#endif
-	  fft_backward(datag, NS);
-	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-	  /*strain & stress calculation*/
-	  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
-	    strain(databeta, dataeps, data, FF, FFv, epsv, nf, d1, d2, d3, size3, of3,it,itp, avepst);
-	    if (it==NT-1) {
-	      printf("go till here!!!\n");
-	    }
-	    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, C11, C12, C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
-	    /*average strain*/
-	    for(i=0;i<ND;i++){
-	      for (j=0;j<ND;j++){
-		for(k1=0;k1<N1;k1++){
-		  for(k2=0;k2<N2;k2++){
-		    for (k3=0;k3<N3;k3++){
-		      na0 = 2*(k3+(k2)*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
-		      aveps[i][j] += dataeps[na0]/N1/N2/N3;		//aveps only appears here to get total average strain
-		    }
-		  }
-		}
-		fprintf(of2,"%e %e ", aveps[i][j],avesigma[i][j]/mu);
-	      }
-	    }
-            
-	    fprintf(of4,"zone   I = %d \n", N3);
-	    for (k1=0;k1<N1;k1++){
-	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
-	      fprintf(of4,"%d %lf \n",k1,dataeps[na0]);
-	    }
-	    fprintf(of6,"zone   I = %d \n", N3);
-	    for (k1=0;k1<N1;k1++){
-	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
-	      fprintf(of6,"%d %lf \n",k1,sigmav[na0]);
-	    }
-	  }
-          
-	  if(it >= NT-NTD){
-	    //2nd calculation for rho
-	    for(is=0;is<NS;is++){
-	      rho2[is] = 0.0;
-	    }
-	    for(i=0;i<N1;i++){
-	      for(j=0;j<N2;j++){
-		for(k=0;k<N3;k++){
-		  int xleft, xright, yleft, yright, zleft, zright,dx,naxright,naxleft,nayright,nayleft;
-#if 0 // avoid warning
-		  int nazright,nazleft;
-		  double dxi_x, dxi_y, dxi_z;
-		  double e1[ND], e2[ND];
-		  e1[0]=-1.0/sqrt(2.0);
-		  e1[1]=1.0/sqrt(2.0);
-		  e1[2]=0.0;
-		  e2[0]=-1.0/sqrt(6.0);
-		  e2[1]=-1.0/sqrt(6.0);
-		  e2[2]=2.0/sqrt(6.0);
-#endif
-		  dx = 2;
-		  xright = i+dx/2;
-		  xleft = i-dx/2;
-		  yright = j+dx/2;
-		  yleft = j-dx/2;
-		  zright = k+dx/2;
-		  zleft = k-dx/2;
-		  if(xleft<0){xleft += N1;}
-		  if(yleft<0){yleft += N2;}
-		  if(zleft<0){zleft += N3;}
-		  if(xright>=N1){xright += -N1;}
-		  if(yright>=N2){yright += -N2;}
-		  if(zright>=N2){zright += -N3;}
-		  for(is=0;is<NS;is++){
-		    // na0 = 2*I4(i, j, k, is);
-		    naxright = 2*I4(xright, j, k, is);
-		    naxleft  = 2*I4(xleft, j, k, is);
-		    nayright = 2*I4(i, yright, k, is);
-		    nayleft  = 2*I4(i, yleft, k, is);
-#if 0 // avoid warning
-		    nazright = 2*I4(i, j, zright, is);
-		    nazleft = 2*I4(i, j, zleft, is);
-#endif
-		    ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
-		    if(ir<(double)((N1/4-1)*(N1/4-1))){
-#if 0 // avoid warning
-		      dxi_x=(xi[naxright]-xi[naxleft])/dx;
-		      dxi_y=(xi[nayright]-xi[nayleft])/dx;
-		      dxi_z=(xi[nazright]-xi[nazleft])/dx;
-#endif
-		      rho2[is] += sqrt((xi[naxright]-xi[naxleft])*(xi[naxright]-xi[naxleft])/(dx*dx)+(xi[nayright]-xi[nayleft])*(xi[nayright]-xi[nayleft])/(dx*dx))*(gs*gs)/size3/gs;
-		    }
-		  }
-		}
-	      }
-	    }
-	    fprintf(ofrho,"%d	",itp2);
-	    for(is=0;is<NS;is++){
-	      fprintf(ofrho,"%e	", rho2[is]);
-	    }
-	    fprintf(ofrho,"\n");
-	  }//end calculate Rho
-          
-	  // #pragma acc data copyin(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3]) 
-	  // {
-	  //mark  energy_in
-	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	  //  }
-	  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
-	  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
-	  if ((it%1==0)||(it==NT-NTD-1)||(it==NT-NTD)) {
-	    fprintf(ofEnergy,"%d    %lf   %lf   %lf   %lf   %lf   %lf\n",it,energy_in,energy_in2,energy_in3,energy_in4,energy_Residual,energy_intotal);
-	  }
-	  virtualevolv(data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, nf, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
-          
-	  //mark extract xi in final step
-	  if (it==NT-NTD-1) {
-	    ofFinalXi_w = fopen("FinalXi_w.dat","wb");
-	    for (i=0; i<2*(NSV)*(N1)*(N2)*(N3); i++) {
-	      fwrite(&xi[i],sizeof(double),1,ofFinalXi_w);
-	 
-	    }
-	    fclose(ofFinalXi_w);
-	  }
-	  
-	  if(vflag == 0){
-	    printf("vflag %d, time %d \n", vflag, it);
-	  }
-          
-          
-	  // mark where suppose to be plasticevolv
-	  for (isa=0; isa<NSV; isa++) {
-	    for (i=0; i<N1; i++) {
-	      for (j=0; j<N2; j++) {
-		for (k=0; k<N3; k++) {
-		  na0 = 2*I4(i, j, k, isa);
-		  data[na0  ] = xi[na0  ];
-		  data[na0+1] = xi[na0+1];
-		}
-	      }
-	    }
-	  }
-	  if (((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1)) || (checkvirtual == 1)) {
-	    printf("here plastic!\n");
-	    it_plastic = 0;
-	    countgamma = 0;
-	    checkpevolv = 1;
-	    for (i = 0; i < plastic_max; i++) {
-	      testplastic[i] = 0;
-	    }
-	    printf("evolve plastic then evolve interface\n");
-	    do {
-	      gammalast = gamma;
-	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
-	      checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
-	      printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
-	      it_plastic = it_plastic + 1;
-	      interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint_x,ppoint_y,ppoint_z,C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
-	      for (isa=0; isa<NSV; isa++) {
-		for (i=0; i<N1; i++) {
-		  for (j=0; j<N2; j++) {
-		    for (k=0; k<N3; k++) {
-		      na0 = 2*I4(i, j, k, isa);
-		      data[na0  ] = xi[na0  ];
-		      data[na0+1] = xi[na0+1];
-		    }
-		  }
-		}
-	      }
-	      if (checkpevolv) {
-		// FFT on data
-		
-		
-		
-		
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
-#ifdef USE_CUFFT
-#pragma acc data copy(data[0:2*N1*N2*N3*NSV])
-#pragma acc host_data use_device(data)
-#endif
-		fft_forward(data, NSV);
-	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT			
-		
-		
-		
-		
-		
-		
-		
-		
-		//initialize data2 and datag
-		for (i = 0; i < 2*N1*N2*N3*NSV; i++) {
-		  data2[i] = 0.;
-		}
-		for (i = 0; i < 2*N1*N2*N3*NS; i++){
-		  datag[i] = 0.;
-		}
-		//calculate data2 and datag
-		for(isa=0;isa<NS;isa++){
-		  for(isb=0;isb<NSV;isb++){
-		    for(i=0;i<N1;i++){
-		      for(j=0;j<N2;j++){
-			for(k=0;k<N3;k++){
-			  na0 = 2*I4(i, j, k, isb);
-			  if(isa<NS){
-			    nb = I5(i, j, k, isa, isb);
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
-			    if(isb<NS){
-			      C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
-			      C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
-			    }
-			  }
-			  if(isa >= NS ){
-			    nb = I5V(i, j, k, isb, isa-NS);
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[nb];
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[nb];
-			  }
-			}
-		      }
-		    }
-		  }
-		}
-		
-		
-		
-		//inverse FFT on data2 and datag
-		 
-		  
-		  
-		  
-		  
-		  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
-
-#ifdef USE_CUFFT
-#pragma acc data copy(data2[0:2*N1*N2*N3*NS])
-#pragma acc host_data use_device(data2)
-#endif
-		fft_backward(data2, NS);	/* inverse FFT*/  
-#ifdef USE_CUFFT
-#pragma acc data copy(datag[0:2*N1*N2*N3*NS])
-#pragma acc host_data use_device(datag)
-#endif
-		fft_backward(datag, NS);	/* inverse FFT*/  
-  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT    
-		  
-		  
-		  
-		   
-		
-		
-		
-		
-		
-		if (1) {//checkpass==1
-		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
-		  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-		  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
-		  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
-		  fprintf(ofcheckEbarrier, "%d   %lf   %lf\n",it_checkEbarrier,fabs(energy_Residual),fabs(energy_intotal));
-                  
-		  //mark check z direction energy density distribution
-		  /*   fprintf(ofzEdensity, "zone   I = 25\n");
-		       for (k=ppoint_z-12;k<ppoint_z+13 ; k++) {
-		       energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,k);
-		       energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,k);
-		       if (k==ppoint_z) {
-		       energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
-		       }else{
-		       energy_Residual = 0.0;
-		       }
-                       
-		       energy_intotal_z[k+12-ppoint_z] = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
-		       fprintf(ofzEdensity, "%d   %lf   %lf\n",k+12-ppoint_z,energy_Residual,energy_intotal_z[k+12-ppoint_z]);
-		       }*/
-		  
-                  
-		  it_checkEbarrier = it_checkEbarrier + 1;
-		}
-	      }
-              
-	      fprintf(ofpfv, "%d       %d         %e           %e           %e\n", it,it_plastic,gamma1[0],gamma1[1],gamma);
-                        
-                        
-	      //mark output phase field during phase field evolution
-              
-	      if (it_plastic%10==0||it_plastic==plastic_max || checkpevolv == 0) {
-		fprintf(ofpfout, "zone   I = %d K = %d\n",N3,N1);
-		for (i=0; i<N1; i++) {
-		  for (k=0; k<N3; k++) {
-		    if ((interface_n[0]*(i-ppoint_x) + interface_n[1]*(0-ppoint_y) + interface_n[2]*(k-ppoint_z))<=0) {
-		      is = 0;
-		    } else{
-		      is = 2;
-		    }
-		    na0 = 2*(k+i*N2*N3+is*N1*N2*N3);
-		    fprintf(ofpfout,"%d   %d   %lf\n",k,i,xi[na0]);
-		  }
-		}
-	      }
-              
-	    } while (checkpevolv&&(it_plastic<plastic_max));
-	  }// end if(it%10==0)
-	  
-	  if(it == NT-1 && itp == NP-1){
-	    for(is=0;is<NS;is++){
-	      fprintf(of2,"	%e", gamma1[is]);
-	    }
-	    fprintf(of2, " %e \n", gamma);
-	  }
-          
-	  if(it!=0){
-	    if (it<NT-NTD-2 && it>0) {
-	      //mark begin of countenergy
-	      if (energy_intotal != 0) {
-		if ((((energy_intotal-energy_last)/energy_intotal)<0?-(energy_intotal-energy_last)/energy_intotal:(energy_intotal-energy_last)/energy_intotal) < 1E-5) {
-		  test_energy[it]=1;
-		  if (it>=5) {
-		    if ((test_energy[it-1]+test_energy[it-2]+test_energy[it-3]+test_energy[it-4]+test_energy[it-5])==15) {
-		      countenergy++;
-		    }
-		    else{
-		      if (countenergy!=0) {
-			countenergy = 0;
-		      }
-		    }
-		  }
-		  printf("(energy_in-energy_last)/energy_in = %e     %d\n",(energy_in-energy_last)/energy_in,countenergy);
-		}
-	      } else {
-		if (((energy_intotal-energy_last)<0?-(energy_intotal-energy_last):(energy_intotal-energy_last))<1E-7) {
-		  test_energy[it]=1;
-		  if (it>=5) {
-		    if ((test_energy[it-1]+test_energy[it-2]+test_energy[it-3]+test_energy[it-4]+test_energy[it-5])==15) {
-		      countenergy++;
-		    }
-		    else{
-		      if (countenergy!=0) {
-			countenergy = 0;
-		      }
-		    }
-		  }
-		  printf("0  energy_in-energy_last = %e    %d\n",energy_intotal-energy_last,countenergy);
-		}
-	      }
-	      
-	      //mark begin of countstrain
-	      if (strain_average != 0) {
-		if ((((strain_average-strain_last)/strain_average)<0?-(strain_average-strain_last)/strain_average:(strain_average-strain_last)/strain_average) < 1E-5) {
-		  test_strain[it]=1;
-		  if (it>=5) {
-		    if ((test_strain[it-1]+test_strain[it-2]+test_strain[it-3]+test_strain[it-4]+test_strain[it-5])==5) {
-		      countstrain++;
-		    }
-		    else{
-		      if (countstrain!=0) {
-			countstrain = 0;
-		      }
-		    }
-		  }
-		  printf("(strain_average-strain_last)/strain_average = %e     %d\n",(strain_average-strain_last)/strain_average,countstrain);
-		}
-	      } else {
-		if (((strain_average-strain_last)<0?-(strain_average-strain_last):(strain_average-strain_last))<1E-7) {
-		  test_strain[it]=1;
-		  if (it>=5) {
-		    if ((test_strain[it-1]+test_strain[it-2]+test_strain[it-3]+test_strain[it-4]+test_strain[it-5])==5) {
-		      countstrain++;
-		    }
-		    else{
-		      if (countstrain!=0) {
-			countstrain = 0;
-		      }
-		    }
-		  }
-		  printf("0  strain_average-strain_last = %e    %d\n",strain_average-strain_last,countstrain);
-		}
-	      }
-              
-	      if ((countenergy==5 || countstrain==5)) {
-		it=NT-NTD-2;
-		checkvirtual = 1;
-	      }
-	    }//mark end of countenergy and countstrain
-	  }//it!=0
-	}/*end it*/
-	
-	fwrite(xi,sizeof(double),sizexi,ofxi);
-	 
-	fwrite(xi_bc,sizeof(double),sizexi_bc,ofxi_bc);
-	 
-	rewind(ofxi);
-	rewind(ofxi_bc);
-	if(itp==0){
-	  fwrite(xi,sizeof(double),sizexi,ofxi1);
-	  fwrite(xi_bc,sizeof(double),sizexi_bc,ofxi_bc1);
-	  rewind(ofxi1);
-	  rewind(ofxi_bc1);
-	}
-      }/*end itp*/
-    }/*end itp2*/
-    
-   
-    free(data);
-    free(data2);
-    free(datag);
-    free(databeta);
-    free(dataeps);
-    free(dataepsd);
-    free(datasigma);
-    free(xi);
-    free(xi_sum);
-    free(fx);
-    free(fy);
-    free(fz);
-    free(f);
-    free(r);
-    free(BB);
-    free(FF);
-    free(DD);
-    free(GG);
-    //free(xiv);
-    free(xi_bc);
-    free(sigmav);
-    free(FFv);
-    free(sigmal);
-    free(xi_o);
-    free(II);
-    free(testplastic);
-	
-    fclose(of2);
-    fclose(of3);
-    fclose(of4);
-    fclose(of5);
-    fclose(of6);
-    fclose(of7);
-    fclose(ofrho);
-    
-    fclose(ofxi);
-    fclose(ofxi_bc);
-    
-    fclose(ofxi1);
-    fclose(ofxi_bc1);
-    fclose(ofEnergy);
-    fclose(ofpfv);
-    fclose(ofpfout);
-    fclose(ofresidual);
-    fclose(ofcheckEbarrier);
-    fclose(ofzEdensity);
-
-    double now = WTime();
-    printf("wall time %fs\n", now - tmstart);
-#ifdef UGPU
-  }//pragma acc data create(fx[0:N1*N2*N3],fy[0:N1:N2:N3],fz[0:N1*N2*N3])
-#endif 
-    
-  return 0;
-}
-
-
 /* functions*/ 
 
 void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND][ND], double epsv[NV][ND][ND],double d1, double d2,double d3, double C11, double C12, double C44, int * xi_o)
@@ -5155,5 +4099,1061 @@ float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoin
 
 
 
+
+
+int main(void)
+{
+  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int * pcountgamma;
+  int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
+  int checkvirtual;
+  int isa, isb;
+  static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
+  static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
+  double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
+  float *data, *data2, *datag, *databeta;
+  float *dataeps, *dataepsd, *datasigma, *sigmav;
+  double *f, *r;
+  double d1, d2, d3, size3,ir,beta2;
+  double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
+  double *BB;
+  double *FF;
+  double *DD;
+  double *GG;
+  double *FFv;
+  int Rv = 0,sizexi,sizexi_bc,countenergy,countstrain;
+  double setobs, gamma, gamma1[NS], gammalast;
+  float uq2,energy_in,energy_last,energy_in2,energy_in3,energy_in4,energy_intotal,strain_average,strain_last,energy_Residual;
+  //    float energy_intotal_z[25];
+  double theta1[NMAT][ND][ND], Cm[NMAT][3], Sm[NMAT][3], KK[NMAT][6][6], *II, AA[NMAT][ND][ND], dS[NMAT][6][6]; //Cm[0]: C11, Cm[1]: C12, Cm[2]: C44.
+  int *xi_o, ZLdC[NMAT][6],prop[NMAT][6];
+    
+  void frec (double *, double *, double *, double, double,double);  //frequency subroutine
+  void setfcc(double xn[NS][ND], double xb[NS][ND]);                //set slip systems
+  void set2D(double xn[NS][ND], double xb[NS][ND]);
+  void set3D1sys(double xn[NS][ND], double xb[NS][ND]);
+  void set3D2sys(double xn[NS][ND], double xb[NS][ND]);
+  void set3D4sys(double xn[NS][ND], double xb[NS][ND]);
+  void setq(double q[N1][N2][N3]);
+  void seteps(double eps[NS][ND][ND], double epsv[NV][ND][ND],double xn[NS][ND], double xb[NS][ND],double dslip2[NS], double AA[NMAT][ND][ND],double theta1[NMAT][ND][ND]);
+  void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], double eps[NS][ND][ND], double *, double *, int *);  //Calculate the resolved shear stress
+  void Bmatrix( double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
+		double , double , double , double, double, double, int *); //Interaction matrix
+  void Fmatrix( double *, double *, double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
+		double , double , double , double, double , double, int *,double theta1[NMAT][ND][ND]); /*needs to be called after function Bmatrix*/
+  float Energy_calculation(double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],double, double, double, float *,double interface_n[ND],int,int ,int);
+  float ResidualEnergy(double *, double interface_n[ND],int, int, int, double, double, double, double);
+  void Gmatrix (double *, double, double xb[NS][ND], double xn[NS][ND], double *, double *, double *);
+  float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *, int, double sigma[N1][N2][N3][ND][ND], double, double, double, double,float,float *, float *,int,double interface_n[ND],int, int, int);
+  void strain(float *, float *, float *, double *, double *, double epsv[NV][ND][ND], int nf[4], double, double, double, double, FILE *of3,int, int, double avepst[N1][N2][N3][ND][ND]);
+  void stress (float *, float *, float *, float *, double *, double eps[NS][ND][ND], double epsv[NV][ND][ND], double, double, double, FILE *of5, int, int, double avesigma[ND][ND],double theta1[NMAT][ND][ND], double slipdirection[ND], double xn[NS][ND],double *,double *,int,int,int,int,int); /*called after function strain*/
+  void in_virtual_void(int, float *, double *, double *, int *);
+  void in_virtual_cylinder(float *, double *, double *, int *);
+  void in_virtual_flat(float *, double *, double *, int *);
+  void in_virtual_homo(float *, double *, double *);
+  void in_virtual_cylinvoid(int, float *, double *, double *, int *);
+  void in_virtual_epitax(int, float *, double *, double *, int *);
+  void initial(float *, double *, double *, double, int *,int,int,int,int);
+  void virtualevolv(float *, float *, float *, double *, double *, double *, double, double *, int, int nf[4], double, double, double, double, FILE *, int,int, int, double *, int *, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6]);
+  double plasticevolv(double *,double *,double CD2[NS],float,float *,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *, float *,double *,int,double,double,double,int);
+  void interfacevolv(double *, double *, double, double, double, double,double,double,double,int *,int,int,int,int,double, double, double, double * , int *,FILE *);
+  void calculateD4int(double, double, double Cm[NMAT][3], double theta1[NMAT][ND][ND], double xb[NS][ND], double xn[NS][ND], double interface_n[ND],double *, double *, double *, double *,double *,double *,double *);
+  int plasticconverge(double,double,int, int * testplastic, int *);
+  void nrerror(char error_text[]);
+ 
+  void setorient(double theta1[NMAT][ND][ND]);
+  void Amatrix(double AA[NMAT][ND][ND], double theta1[NMAT][ND][ND]);
+  void setDorient(int *,double *,double *,int,double interface_n[ND],int,int,int);
+  void setMat(double Cm[NMAT][3], double Sm[NMAT][3], double b2[NS], double dslip2[NS], double , double, double, double, double);
+  void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND],  double KK[NMAT][6][6], double dS[NMAT][6][6], int ZLdC[NMAT][6],int prop[NMAT][6],double theta1[NMAT][ND][ND]);
+  float Imatrix(double *, double *, double KK[NMAT][6][6], double, double, double, int *,float,double interface_n[ND],int,int,int);
+  void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[NMAT][3],int,int,int,int,double interface_n[ND]);
+    
+  FILE *of2, *of3, *of4, *of5, *of6, *of7, *ofrho,*ofxi,*ofxi_bc, *ofxi1, *ofxi_bc1,*ofEnergy,*ofFinalXi_w,*ofpfv, *ofpfout, *ofresidual,*ofcheckEbarrier,*ofzEdensity;
+  //    FILE *ofFinalXi;
+  
+  /* data is offset by one respect to xi due to offset in fourn
+     data goes to fft and is repalced by its fft
+     xi is always in real space  and is updated every step*/
+#ifdef ACC_NVIDIA
+  acc_init(acc_device_nvidia);
+  acc_device_t device_type = acc_get_device_type();
+  if ( acc_device_nvidia == device_type ) {
+    int num_devices=acc_get_num_devices(acc_device_nvidia); 
+    acc_set_device_num(0,acc_device_nvidia); 
+      
+    printf("Number Of GPUs %d\n",num_devices);
+  }
+#endif 
+     
+  double tmstart = WTime();
+       
+  sizexi = 2*(NSV)*(N1)*(N2)*(N3);
+  sizexi_bc = 2*(NSV)*(N1)*(N2)*(N3);
+
+  data = array4d_alloc(N1, N2, N3, NSV);
+  data2 = array4d_alloc(N1, N2, N3, NSV);
+  datag = array4d_alloc(N1, N2, N3, NS);
+  databeta = array5d_alloc(N1, N2, N3, ND, ND);
+  dataeps = array5d_alloc(N1, N2, N3, ND, ND);
+  dataepsd = array5d_alloc(N1, N2, N3, ND, ND);
+  datasigma = array5d_alloc(N1, N2, N3, ND, ND);
+
+  sigmav = malloc(2*N1*N2*N3*NV*sizeof(float));
+  xi = malloc(2*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
+  xi_bc = malloc(2*NSV*N1*N2*N3*sizeof(double));
+  xi_sum = malloc(2*(N1)*(N2)*(N3)*sizeof(double));
+  fx = malloc((N1)*(N2)*(N3)*sizeof(double));
+  fy = malloc((N1)*(N2)*(N3)*sizeof(double));
+  fz = malloc((N1)*(N2)*(N3)*sizeof(double));
+  f = malloc((NS)*(N1)*(N2)*(N3)*sizeof(double));
+  r = malloc((ND)*sizeof(double));
+  BB = malloc((NS)*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
+  FF = malloc((NS)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
+  DD = malloc((NSV)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
+  FFv = malloc((NV)*(N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
+  sigmal= malloc((N1)*(N2)*(N3)*(ND)*(ND)*sizeof(double));
+  GG = malloc((2*(NS)*(NS)*(N1)*(N2)*(N3))*sizeof(double));
+  xi_o = malloc((N1)*(N2)*(N3)*sizeof(int));
+  II = malloc((ND)*(ND)*(N1)*(N2)*(N3)*sizeof(double));
+  penetrationstress = malloc(N2*sizeof(double));// only valid for N2 = 2
+  penetrationstress2 = malloc(N2*sizeof(double));// only valid for N2 = 2
+    
+  
+    
+    
+#define REAL 0
+#define IMAG 1
+    
+  /* print files */
+  of2 = fopen("stress-strain.dat","w");
+  of3 = fopen("strain.txt","w");
+  of4 = fopen("strain1D.dat","w");
+  of5 = fopen("stress.txt","w");
+  of6 = fopen("stress1D.dat","w");
+  of7 = fopen("virtual_strain.dat","w");
+  ofrho = fopen("rho.dat","w");
+  ofEnergy = fopen("checkEnergy.dat","w");
+  // ofFinalXi = fopen("FinalXi.dat","rb");
+  ofpfv = fopen("phasefield.dat","w");
+  ofpfout = fopen("pfout.dat","w");
+  ofresidual = fopen("residual.dat","w");
+  ofcheckEbarrier = fopen("checkEbarrier.dat","w");
+  ofzEdensity = fopen("zE.dat","w");
+	
+  choice=1; //choice=1 start w/o reading data; choice=2, read in xi and xi_bc.
+	
+  if((ofxi = fopen("xi.dat","r+")) == NULL){
+    if((ofxi = fopen("xi.dat","w+")) == NULL){
+      printf("File could not be opened\n");
+      exit(1);
+    }	
+  }
+  if((ofxi_bc = fopen("xi_bc.dat","r+")) == NULL){
+    if((ofxi_bc = fopen("xi_bc.dat","w+")) == NULL){
+      printf("File could not be opened\n");
+      exit(1);
+    }	
+  }
+    
+  if((ofxi1 = fopen("xi1.dat","r+")) == NULL){
+    if((ofxi1 = fopen("xi1.dat","w+")) == NULL){
+      printf("File could not be opened\n");
+      exit(1); 
+     
+    }	
+  }
+  if((ofxi_bc1 = fopen("xi_bc1.dat","r+")) == NULL){
+    if((ofxi_bc1 = fopen("xi_bc1.dat","w+")) == NULL){
+      printf("File could not be opened\n");
+      exit(1);
+    }	
+  }
+    
+  setobs = 0.05;//0.30; //set random obstacle density
+  //double setsigma = 0.000;//1.0E-2;//3E-3;//1.5E-1;//1.5E-3;//0.25;//0.3;//0.5/10;//0.7;//0.002;//0.001;//1.0;//0.04;//0.005;//1.0;//0.01; //2.3E-3;  //set stress
+  //double sigstep = 0.00;//1.0E-2;//0.0002; //set stress increment
+  gamma = 0.0;
+  gammalast = 0.0;
+  
+  //float uq1=1.0/3.0;
+  uq2=1.0;
+    
+  /* set # of time steps between virtualstrain evolve and phase field evolve */
+  t_bwvirtualpf = 1;
+  checkvirtual = 0;
+  border = N3*3/4;
+  ppoint_x = N1/2;//1 point penetration point on interface
+  ppoint_y = 0;
+  ppoint_z = border;
+  it_checkEbarrier = 0;
+  plastic_max =3000;//original:3000
+	
+  /* Set material constants for material 0 */
+  //C11 = 246.5E9; //Ni
+  //C12 = 147.3E9;
+  //C44 = 49.6E9;
+  C11=168.4E9;//Cu
+  C12=121.4E9;
+  C44=23.5E9;
+    
+    
+  //C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
+  //C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
+  //C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
+  //C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
+  //C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
+  //C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
+  //C11=107.3E9;//Al
+  //C12=60.9E9;
+  //C44=23.2E9;
+  //C11 = 346.7E9; //Pt
+  //C12 = 250.7E9;
+  //C44 = 48.E9;
+  //C11 = 227.1E9; //Pd
+  //C12 = 176.E9;
+  //C44 = 25.55E9;
+  //C11 = 580.E9; //Ir
+  //C12 = 242.E9;
+  //C44 = 169.E9;
+	
+  b = 0.256E-9;
+  dslip = 1.0;//4.0;//1.0;//N1/4/sqrt(3.0); /* in units of b*/
+  a_f = 0.361E-9; //for Cu
+  //a_f = 0.352E-9; //for Ni
+  //a_f = 0.392E-9; //for Pt
+  //a_f = 0.408E-9; //for Au
+  //a_f = 0.405E-9; //for Al
+  //a_f = 0.409E-9;//for Ag
+  //a_f = 0.380E-9;//for Rh
+  //a_f = 0.389E-9;//Pd
+  //a_f = 0.384E-9;//Ir
+    
+  a_s = 0.361E-9; //for Cu
+  //a_s = 0.352E-9; //for Ni
+  //a_s = 0.392E-9; //for Pt
+  //a_s = 0.408E-9; //for Au
+  //a_s = 0.405E-9; //for Al
+  //a_s = 0.409E-9;//for Ag
+  //a_s = 0.380E-9;//for Rh
+  //a_s = 0.389E-9;//Pd
+  //a_s = 0.384E-9;//Ir
+    
+  D00 = 0.0;
+  D11 = 0.0;
+  D10 = 0.0;
+  D01 = 0.0;
+  interface_n[0] = sqrt(3)/3.;//interface_n in global coordinate system
+  interface_n[1] = 0.0;
+  interface_n[2] = sqrt(6)/3.;
+  //slipdirection is not used in simulation
+  slipdirection[0] = -sqrt(2)/2.;//slipdirection in crystal coordinate system. Usually coincides with burgers vector for edge. Otherwise have both edge and screw component.
+  slipdirection[1] = 0.0;
+  slipdirection[2] = sqrt(2)/2.;
+  checkpass = 1; //mark: check whether the dislocation has enough energy to pass interface
+	
+  setMat( Cm,  Sm,  b2, dslip2, C11, C12, C44, b, dslip);  //set elastic constants, b2, dslip2 for different materials
+
+  if(MT==1){	//isotropic material
+    C11 = 2.0*C44+C12;  
+    printf("This is an isotropic material.\n");}
+  else if(MT==2) printf("This is a cubic material.\n");  //cubic material
+  else{
+    printf("Material type defined incorrectly. Please select an integer up to 2.\n");
+    exit(1);
+  }
+    
+    
+  mu = C44;//C44-(2.0*C44+C12-C11)/5.0;
+  //double ll = C12;//C12-(2.0*C44+C12-C11)/5.0;
+  //double mup= C11-C12-2*C44;
+  //double young = mu*(3*ll+2*mu)/(ll+mu);
+  //double nu = young/2.0/mu-1.0;
+    
+  S11 = 1./3.*(1/(C11+2*C12) + 2/(C11-C12));
+  S12 = 1./3.*(1/(C11+2*C12) - 1/(C11-C12));
+  S44 = 1/C44;
+    
+  //double L = (double)(N3);
+	
+  nf[0]=N1;
+  nf[1]=N1;
+  nf[2]=N2;
+  nf[3]=N3;
+  nsize = N1*N2*N3;
+    
+  d1 = 1;//10.0; //in unis of b so Fequencies are normalized
+  d2 = 1;//10.0;
+  d3 = 1;//10.0;
+    
+  gs = b2[0]*d1;  /*grid size*/
+
+  //double size = L*gs;
+  size3 = b2[0]*b2[0]*b2[0]*N1*N2*N3*d1*d2*d3;
+  for(is=0;is<NS;is++){
+    Asf2[is] = 0.0262;//the constant C in the code is C = Asf * C44 *dslip*b //
+  }
+  Asf2[0] = 0.0064659518668288441;
+  Asf2[1] = 0.0064659518668288441;
+  if (NS == 4) {
+    Asf2[2] = 0.013307048604153731;
+    Asf2[3] = 0.013307048604153731;
+  }
+  // for Cu, B = 0.1519499J/m^2, for Ni, B = 0.3127156J/m^2, don't forget normalize by C44
+  // normalized by C44_Ni, B_cu = 0.003063505420775763, B_ni = 0.0063047508507583193
+  // normalized by C44_Cu, B_cu = 0.0064659518668288441, B_ni = 0.013307048604153731
+  // normalized by C44_Au, B_au = 0.0073077793951971436, B_ag = 0.0077033035051546385
+  // normalized by C44_Ag, B_au = 0.006949554901960784, B_ag = 0.007325690588235293
+  // normalized by C44_Au, B_au = 0.0073077793951971436, B_al = 0.011566588369596448
+  // normalized by C44_Al, B_au = 0.0045831116465568297, B_al = 0.0072540457231736353
+    
+  printf ("core energy C = %lf \n", Asf2[0] * mu * dslip2[0]*b2[0]);
+	
+  for(is=0;is<NS;is++){
+    CD2[is] = 0.1;//1.0/100/2;//0.0000001; //1.0; /* dif coefficient*/
+  }
+  CDv = 0.00007;//0.2/1000;//1E-2;//2E-4;//0.02;//0.00002;//0.0002;//0.002;//0.2; //0.002; //0.2;//0.00000000002; //0.1; /*kinetic coeff for virtual strain*/
+  beta2=4E2;
+	
+  /* Set grain orientations */
+  setorient(theta1);
+  /* Set axis transformation matrix */
+  Amatrix(AA, theta1);
+  /* Set orientation for the domain */
+  setDorient(xi_o,&d_f,&d_s,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
+  /* Set deltaS matrix */	
+  dSmat(Cm, Sm, AA,  KK, dS, ZLdC,prop,theta1);
+  /*Set the slip systems frequency and matrix BB */	
+    
+  //set2D(xn,xb);
+  // set3D2sys(xn,xb);
+    
+  set3D1sys(xn,xb);
+  seteps(eps, epsv, xn, xb, dslip2,AA,theta1);
+  //mark calculate D coefficients for interface evolve
+  calculateD4int(a_f, a_s, Cm, theta1, xb, xn, interface_n,&D00, &D01, &D10, &D11,&lam1,&lam2,&stressthreshold);
+  printf("D00 = %e, D11 = %e, D10 = %e, D01 = %e\n",D00,D11,D10,D01);
+  
+  printf("Frequencies\n");
+#ifdef  UGPU
+#pragma acc data create(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
+  {
+#endif  
+    frec(fx, fy, fz, d1, d2, d3);
+    	   
+    printf("Set interaction matrix\n");
+    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, C11, C12, C44, xi_o);
+    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  C11,  C12,  C44, xi_o,theta1);
+    printf("HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX\n");
+    //     getchar();
+    Gmatrix (GG, beta2, xb, xn, fx, fy, fz);
+    printf("HERE WE ARE AFTER CALLING THE GMATRIX\n");  
+  
+  
+    /*#ifdef GPU
+      #pragma acc kernels
+      {
+      #endif  
+      for(i=1;i<2*(NSV)*(N1)*(N2)*(N3)+1;i++)
+      {
+      data[i]=0.;
+      }
+    
+      #ifdef GPU
+      } //#pragma acc kernels
+      #endif 
+    */
+   
+    if(choice==1){
+      printf(" Generating initial data\n");
+      
+      
+     
+      
+      /* #ifdef GPUU
+	 #pragma acc update host(data)
+	 #endif */ 
+    
+    
+    
+      initial(data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
+      
+      /*#ifdef GPUU
+	#pragma acc update device(data)
+	#endif*/
+     
+    
+     
+      
+    }
+    
+  
+
+  
+    if(choice==2){
+      fread(xi,sizeof(double),sizexi,ofxi);
+      fread(xi_bc,sizeof(double),sizexi_bc,ofxi_bc);
+      rewind(ofxi);
+      rewind(ofxi_bc);
+      
+      for(is=0;is<NSV;is++){
+	for(i=0;i<N1;i++){
+	  for(j=0;j<N2;j++){
+	    for(k=0;k<N3;k++){
+	      na0 = 2*I4(i, j, k, is);
+	      data[na0  ] = xi[na0  ];
+	      data[na0+1] = xi[na0+1];
+	    }
+	  }
+	}
+      }							
+    }
+    
+    
+ 
+  
+    
+    
+    setq(q);
+    
+   
+    
+    printf("start time step \n");
+    /* time step */
+    int test_energy[NT], test_strain[NT];     // test for countenergy and countstrain in time step
+    for (i = 0; i < NT; i++) {
+      test_energy[i] = 0;
+      test_strain[i] = 0;
+    }
+    
+    
+  
+    
+    
+    int * testplastic;    //test for plasticevolv
+    testplastic =  malloc(plastic_max*sizeof(int));
+    
+    pcountgamma = &countgamma;
+    
+    //mark setstress
+    setstress(sigma,a_s,a_f,Cm,border,ppoint_x,ppoint_y,ppoint_z,interface_n);
+    
+    for(itp2=0;itp2<NP2;itp2++){
+      /* Applied stress*/
+      /*
+	sigma[0][0]=0.0;
+	sigma[0][1]=0.001;
+	//	  if ((it+itp*NT)<20) sigma[0][2]=0.000;
+	//	  else sigma[0][2]=setsigma + itp*sigstep;//0.000;
+	sigma[0][2]=0.000;
+	sigma[1][0]=sigma[0][1];
+	sigma[1][1]=0.000;//setsigma + itp2*sigstep;//setsigma;//0.0;//setsigma + itp*sigstep;//0.000;
+	sigma[1][2]=0.0;//setsigma + itp2*sigstep;//0.0;//setsigma + itp*sigstep; //0.0001;
+	sigma[2][0]=sigma[0][2];
+	sigma[2][1]=sigma[1][2];
+	sigma[2][2]=setsigma + itp*sigstep;
+      */
+      resolSS(sigma,tau, eps, xi_bc, sigmal, xi_o);
+      for(itp=0;itp<NP;itp++){
+	countgamma=0;
+	countenergy=0;
+	countstrain=0;
+	for(it=0;it<NT;it++){
+	  printf("time step, %d %d %d\n", it, itp, itp2);
+	  printf("xi = %e\n",xi[2*NS*N1*N2*N3]);
+	  
+	  //mark input Xi via file
+          /*
+	    int index0,index1,index2;
+	    if (it==0) {
+	    for (i=0; i<sizexi; i++) {
+	    fread(&xi[i],sizeof(double),1,ofFinalXi);
+	    }
+	    for (is=0; is<NSV; is++) {
+	    for (i=0; i<N1; i++) {
+	    for (j=0; j<N2; j++) {
+	    for (k=0; k<N3; k++) {
+	    index0=2*(k+j*N3+i*N3*N2+is*N1*N2*N3);
+	    index1=index0+1;
+	    index2=index0+2;
+	    data[index1]=xi[index0];
+	    data[index2]=xi[index1];
+	    }
+	    }
+	    }
+	    }
+	    fclose(ofFinalXi);
+	    }*/
+                
+	  for(i=0;i<ND;i++){
+	    for(j=0;j<ND;j++){
+	      avesigma[i][j] = 0.0;
+	      for (k1=0; k1<N1; k1++) {
+		for (k2=0; k2<N2; k2++) {
+		  for (k3=0; k3<N3; k3++) {
+		    avepst[k1][k2][k3][i][j] = 0.0;
+		  }
+		}
+	      }
+	      avepsd[i][j] = 0.0;
+	      aveps[i][j] = 0.0;
+	    }
+	  }
+	  if(it!=0){
+	    energy_last=energy_intotal;
+	    strain_last=strain_average;
+	  }
+	  energy_intotal = 0.0;
+	  energy_in =0.0;
+	  energy_in2 = 0.0;
+	  energy_in3 = 0.0;
+	  energy_in4 = 0.0;
+	  strain_average = 0.0;
+          
+	  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	  energy_in2 = Imatrix(II, xi, KK, C11, C12, C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
+            
+          
+	  vflag=0;
+
+	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+
+#ifdef USE_CUFFT
+#pragma acc data copy(data[0:2*N1*N2*N3*NSV])
+#pragma acc host_data use_device(data)
+#endif
+	  fft_forward(data, NSV);
+	    
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT		  
+  
+	  for (i=0; i < 2*N1*N2*N3*NSV; i++) {
+	    data2[i] = 0.;
+	  }
+	  for (i=0; i < 2*N1*N2*N3*NS; i++){
+	    datag[i] = 0.;
+	  }
+          
+	  for(isa=0;isa<NS;isa++){
+	    for(isb=0;isb<NSV;isb++){
+	      for(i=0;i<N1;i++){
+		for(j=0;j<N2;j++){
+		  for(k=0;k<N3;k++){
+		    na0 = 2*I4(i, j, k, isb);
+		    if(isa<NS){
+		      nb = I5(i, j, k, isa, isb);
+		      C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
+		      C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
+		      if(isb<NS){
+			C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
+			C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
+		      }
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+          
+          
+          
+          
+          
+	 
+          
+          
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+
+#ifdef USE_CUFFT
+#pragma acc data copy(datag[0:2*N1*N2*N3*NS])
+#pragma acc host_data use_device(datag)
+#endif
+	  fft_backward(datag, NS);
+	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+	  /*strain & stress calculation*/
+	  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
+	    strain(databeta, dataeps, data, FF, FFv, epsv, nf, d1, d2, d3, size3, of3,it,itp, avepst);
+	    if (it==NT-1) {
+	      printf("go till here!!!\n");
+	    }
+	    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, C11, C12, C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
+	    /*average strain*/
+	    for(i=0;i<ND;i++){
+	      for (j=0;j<ND;j++){
+		for(k1=0;k1<N1;k1++){
+		  for(k2=0;k2<N2;k2++){
+		    for (k3=0;k3<N3;k3++){
+		      na0 = 2*(k3+(k2)*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
+		      aveps[i][j] += dataeps[na0]/N1/N2/N3;		//aveps only appears here to get total average strain
+		    }
+		  }
+		}
+		fprintf(of2,"%e %e ", aveps[i][j],avesigma[i][j]/mu);
+	      }
+	    }
+            
+	    fprintf(of4,"zone   I = %d \n", N3);
+	    for (k1=0;k1<N1;k1++){
+	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
+	      fprintf(of4,"%d %lf \n",k1,dataeps[na0]);
+	    }
+	    fprintf(of6,"zone   I = %d \n", N3);
+	    for (k1=0;k1<N1;k1++){
+	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
+	      fprintf(of6,"%d %lf \n",k1,sigmav[na0]);
+	    }
+	  }
+          
+	  if(it >= NT-NTD){
+	    //2nd calculation for rho
+	    for(is=0;is<NS;is++){
+	      rho2[is] = 0.0;
+	    }
+	    for(i=0;i<N1;i++){
+	      for(j=0;j<N2;j++){
+		for(k=0;k<N3;k++){
+		  int xleft, xright, yleft, yright, zleft, zright,dx,naxright,naxleft,nayright,nayleft;
+#if 0 // avoid warning
+		  int nazright,nazleft;
+		  double dxi_x, dxi_y, dxi_z;
+		  double e1[ND], e2[ND];
+		  e1[0]=-1.0/sqrt(2.0);
+		  e1[1]=1.0/sqrt(2.0);
+		  e1[2]=0.0;
+		  e2[0]=-1.0/sqrt(6.0);
+		  e2[1]=-1.0/sqrt(6.0);
+		  e2[2]=2.0/sqrt(6.0);
+#endif
+		  dx = 2;
+		  xright = i+dx/2;
+		  xleft = i-dx/2;
+		  yright = j+dx/2;
+		  yleft = j-dx/2;
+		  zright = k+dx/2;
+		  zleft = k-dx/2;
+		  if(xleft<0){xleft += N1;}
+		  if(yleft<0){yleft += N2;}
+		  if(zleft<0){zleft += N3;}
+		  if(xright>=N1){xright += -N1;}
+		  if(yright>=N2){yright += -N2;}
+		  if(zright>=N2){zright += -N3;}
+		  for(is=0;is<NS;is++){
+		    // na0 = 2*I4(i, j, k, is);
+		    naxright = 2*I4(xright, j, k, is);
+		    naxleft  = 2*I4(xleft, j, k, is);
+		    nayright = 2*I4(i, yright, k, is);
+		    nayleft  = 2*I4(i, yleft, k, is);
+#if 0 // avoid warning
+		    nazright = 2*I4(i, j, zright, is);
+		    nazleft = 2*I4(i, j, zleft, is);
+#endif
+		    ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
+		    if(ir<(double)((N1/4-1)*(N1/4-1))){
+#if 0 // avoid warning
+		      dxi_x=(xi[naxright]-xi[naxleft])/dx;
+		      dxi_y=(xi[nayright]-xi[nayleft])/dx;
+		      dxi_z=(xi[nazright]-xi[nazleft])/dx;
+#endif
+		      rho2[is] += sqrt((xi[naxright]-xi[naxleft])*(xi[naxright]-xi[naxleft])/(dx*dx)+(xi[nayright]-xi[nayleft])*(xi[nayright]-xi[nayleft])/(dx*dx))*(gs*gs)/size3/gs;
+		    }
+		  }
+		}
+	      }
+	    }
+	    fprintf(ofrho,"%d	",itp2);
+	    for(is=0;is<NS;is++){
+	      fprintf(ofrho,"%e	", rho2[is]);
+	    }
+	    fprintf(ofrho,"\n");
+	  }//end calculate Rho
+          
+	  // #pragma acc data copyin(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3]) 
+	  // {
+	  //mark  energy_in
+	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	  //  }
+	  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+	  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
+	  if ((it%1==0)||(it==NT-NTD-1)||(it==NT-NTD)) {
+	    fprintf(ofEnergy,"%d    %lf   %lf   %lf   %lf   %lf   %lf\n",it,energy_in,energy_in2,energy_in3,energy_in4,energy_Residual,energy_intotal);
+	  }
+	  virtualevolv(data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, nf, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
+          
+	  //mark extract xi in final step
+	  if (it==NT-NTD-1) {
+	    ofFinalXi_w = fopen("FinalXi_w.dat","wb");
+	    for (i=0; i<2*(NSV)*(N1)*(N2)*(N3); i++) {
+	      fwrite(&xi[i],sizeof(double),1,ofFinalXi_w);
+	 
+	    }
+	    fclose(ofFinalXi_w);
+	  }
+	  
+	  if(vflag == 0){
+	    printf("vflag %d, time %d \n", vflag, it);
+	  }
+          
+          
+	  // mark where suppose to be plasticevolv
+	  for (isa=0; isa<NSV; isa++) {
+	    for (i=0; i<N1; i++) {
+	      for (j=0; j<N2; j++) {
+		for (k=0; k<N3; k++) {
+		  na0 = 2*I4(i, j, k, isa);
+		  data[na0  ] = xi[na0  ];
+		  data[na0+1] = xi[na0+1];
+		}
+	      }
+	    }
+	  }
+	  if (((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1)) || (checkvirtual == 1)) {
+	    printf("here plastic!\n");
+	    it_plastic = 0;
+	    countgamma = 0;
+	    checkpevolv = 1;
+	    for (i = 0; i < plastic_max; i++) {
+	      testplastic[i] = 0;
+	    }
+	    printf("evolve plastic then evolve interface\n");
+	    do {
+	      gammalast = gamma;
+	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
+	      checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
+	      printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
+	      it_plastic = it_plastic + 1;
+	      interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint_x,ppoint_y,ppoint_z,C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
+	      for (isa=0; isa<NSV; isa++) {
+		for (i=0; i<N1; i++) {
+		  for (j=0; j<N2; j++) {
+		    for (k=0; k<N3; k++) {
+		      na0 = 2*I4(i, j, k, isa);
+		      data[na0  ] = xi[na0  ];
+		      data[na0+1] = xi[na0+1];
+		    }
+		  }
+		}
+	      }
+	      if (checkpevolv) {
+		// FFT on data
+		
+		
+		
+		
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+
+#ifdef USE_CUFFT
+#pragma acc data copy(data[0:2*N1*N2*N3*NSV])
+#pragma acc host_data use_device(data)
+#endif
+		fft_forward(data, NSV);
+	  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT			
+		
+		
+		
+		
+		
+		
+		
+		
+		//initialize data2 and datag
+		for (i = 0; i < 2*N1*N2*N3*NSV; i++) {
+		  data2[i] = 0.;
+		}
+		for (i = 0; i < 2*N1*N2*N3*NS; i++){
+		  datag[i] = 0.;
+		}
+		//calculate data2 and datag
+		for(isa=0;isa<NS;isa++){
+		  for(isb=0;isb<NSV;isb++){
+		    for(i=0;i<N1;i++){
+		      for(j=0;j<N2;j++){
+			for(k=0;k<N3;k++){
+			  na0 = 2*I4(i, j, k, isb);
+			  if(isa<NS){
+			    nb = I5(i, j, k, isa, isb);
+			    C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
+			    C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
+			    if(isb<NS){
+			      C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
+			      C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
+			    }
+			  }
+			  if(isa >= NS ){
+			    nb = I5V(i, j, k, isb, isa-NS);
+			    C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[nb];
+			    C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[nb];
+			  }
+			}
+		      }
+		    }
+		  }
+		}
+		
+		
+		
+		//inverse FFT on data2 and datag
+		 
+		  
+		  
+		  
+		  
+		  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+
+
+#ifdef USE_CUFFT
+#pragma acc data copy(data2[0:2*N1*N2*N3*NS])
+#pragma acc host_data use_device(data2)
+#endif
+		fft_backward(data2, NS);	/* inverse FFT*/  
+#ifdef USE_CUFFT
+#pragma acc data copy(datag[0:2*N1*N2*N3*NS])
+#pragma acc host_data use_device(datag)
+#endif
+		fft_backward(datag, NS);	/* inverse FFT*/  
+  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
+		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT    
+		  
+		  
+		  
+		   
+		
+		
+		
+		
+		
+		if (1) {//checkpass==1
+		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+		  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
+		  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+		  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
+		  fprintf(ofcheckEbarrier, "%d   %lf   %lf\n",it_checkEbarrier,fabs(energy_Residual),fabs(energy_intotal));
+                  
+		  //mark check z direction energy density distribution
+		  /*   fprintf(ofzEdensity, "zone   I = 25\n");
+		       for (k=ppoint_z-12;k<ppoint_z+13 ; k++) {
+		       energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,k);
+		       energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,k);
+		       if (k==ppoint_z) {
+		       energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
+		       }else{
+		       energy_Residual = 0.0;
+		       }
+                       
+		       energy_intotal_z[k+12-ppoint_z] = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
+		       fprintf(ofzEdensity, "%d   %lf   %lf\n",k+12-ppoint_z,energy_Residual,energy_intotal_z[k+12-ppoint_z]);
+		       }*/
+		  
+                  
+		  it_checkEbarrier = it_checkEbarrier + 1;
+		}
+	      }
+              
+	      fprintf(ofpfv, "%d       %d         %e           %e           %e\n", it,it_plastic,gamma1[0],gamma1[1],gamma);
+                        
+                        
+	      //mark output phase field during phase field evolution
+              
+	      if (it_plastic%10==0||it_plastic==plastic_max || checkpevolv == 0) {
+		fprintf(ofpfout, "zone   I = %d K = %d\n",N3,N1);
+		for (i=0; i<N1; i++) {
+		  for (k=0; k<N3; k++) {
+		    if ((interface_n[0]*(i-ppoint_x) + interface_n[1]*(0-ppoint_y) + interface_n[2]*(k-ppoint_z))<=0) {
+		      is = 0;
+		    } else{
+		      is = 2;
+		    }
+		    na0 = 2*(k+i*N2*N3+is*N1*N2*N3);
+		    fprintf(ofpfout,"%d   %d   %lf\n",k,i,xi[na0]);
+		  }
+		}
+	      }
+              
+	    } while (checkpevolv&&(it_plastic<plastic_max));
+	  }// end if(it%10==0)
+	  
+	  if(it == NT-1 && itp == NP-1){
+	    for(is=0;is<NS;is++){
+	      fprintf(of2,"	%e", gamma1[is]);
+	    }
+	    fprintf(of2, " %e \n", gamma);
+	  }
+          
+	  if(it!=0){
+	    if (it<NT-NTD-2 && it>0) {
+	      //mark begin of countenergy
+	      if (energy_intotal != 0) {
+		if ((((energy_intotal-energy_last)/energy_intotal)<0?-(energy_intotal-energy_last)/energy_intotal:(energy_intotal-energy_last)/energy_intotal) < 1E-5) {
+		  test_energy[it]=1;
+		  if (it>=5) {
+		    if ((test_energy[it-1]+test_energy[it-2]+test_energy[it-3]+test_energy[it-4]+test_energy[it-5])==15) {
+		      countenergy++;
+		    }
+		    else{
+		      if (countenergy!=0) {
+			countenergy = 0;
+		      }
+		    }
+		  }
+		  printf("(energy_in-energy_last)/energy_in = %e     %d\n",(energy_in-energy_last)/energy_in,countenergy);
+		}
+	      } else {
+		if (((energy_intotal-energy_last)<0?-(energy_intotal-energy_last):(energy_intotal-energy_last))<1E-7) {
+		  test_energy[it]=1;
+		  if (it>=5) {
+		    if ((test_energy[it-1]+test_energy[it-2]+test_energy[it-3]+test_energy[it-4]+test_energy[it-5])==15) {
+		      countenergy++;
+		    }
+		    else{
+		      if (countenergy!=0) {
+			countenergy = 0;
+		      }
+		    }
+		  }
+		  printf("0  energy_in-energy_last = %e    %d\n",energy_intotal-energy_last,countenergy);
+		}
+	      }
+	      
+	      //mark begin of countstrain
+	      if (strain_average != 0) {
+		if ((((strain_average-strain_last)/strain_average)<0?-(strain_average-strain_last)/strain_average:(strain_average-strain_last)/strain_average) < 1E-5) {
+		  test_strain[it]=1;
+		  if (it>=5) {
+		    if ((test_strain[it-1]+test_strain[it-2]+test_strain[it-3]+test_strain[it-4]+test_strain[it-5])==5) {
+		      countstrain++;
+		    }
+		    else{
+		      if (countstrain!=0) {
+			countstrain = 0;
+		      }
+		    }
+		  }
+		  printf("(strain_average-strain_last)/strain_average = %e     %d\n",(strain_average-strain_last)/strain_average,countstrain);
+		}
+	      } else {
+		if (((strain_average-strain_last)<0?-(strain_average-strain_last):(strain_average-strain_last))<1E-7) {
+		  test_strain[it]=1;
+		  if (it>=5) {
+		    if ((test_strain[it-1]+test_strain[it-2]+test_strain[it-3]+test_strain[it-4]+test_strain[it-5])==5) {
+		      countstrain++;
+		    }
+		    else{
+		      if (countstrain!=0) {
+			countstrain = 0;
+		      }
+		    }
+		  }
+		  printf("0  strain_average-strain_last = %e    %d\n",strain_average-strain_last,countstrain);
+		}
+	      }
+              
+	      if ((countenergy==5 || countstrain==5)) {
+		it=NT-NTD-2;
+		checkvirtual = 1;
+	      }
+	    }//mark end of countenergy and countstrain
+	  }//it!=0
+	}/*end it*/
+	
+	fwrite(xi,sizeof(double),sizexi,ofxi);
+	 
+	fwrite(xi_bc,sizeof(double),sizexi_bc,ofxi_bc);
+	 
+	rewind(ofxi);
+	rewind(ofxi_bc);
+	if(itp==0){
+	  fwrite(xi,sizeof(double),sizexi,ofxi1);
+	  fwrite(xi_bc,sizeof(double),sizexi_bc,ofxi_bc1);
+	  rewind(ofxi1);
+	  rewind(ofxi_bc1);
+	}
+      }/*end itp*/
+    }/*end itp2*/
+    
+   
+    free(data);
+    free(data2);
+    free(datag);
+    free(databeta);
+    free(dataeps);
+    free(dataepsd);
+    free(datasigma);
+    free(xi);
+    free(xi_sum);
+    free(fx);
+    free(fy);
+    free(fz);
+    free(f);
+    free(r);
+    free(BB);
+    free(FF);
+    free(DD);
+    free(GG);
+    //free(xiv);
+    free(xi_bc);
+    free(sigmav);
+    free(FFv);
+    free(sigmal);
+    free(xi_o);
+    free(II);
+    free(testplastic);
+	
+    fclose(of2);
+    fclose(of3);
+    fclose(of4);
+    fclose(of5);
+    fclose(of6);
+    fclose(of7);
+    fclose(ofrho);
+    
+    fclose(ofxi);
+    fclose(ofxi_bc);
+    
+    fclose(ofxi1);
+    fclose(ofxi_bc1);
+    fclose(ofEnergy);
+    fclose(ofpfv);
+    fclose(ofpfout);
+    fclose(ofresidual);
+    fclose(ofcheckEbarrier);
+    fclose(ofzEdensity);
+
+    double now = WTime();
+    printf("wall time %fs\n", now - tmstart);
+#ifdef UGPU
+  }//pragma acc data create(fx[0:N1*N2*N3],fy[0:N1:N2:N3],fz[0:N1*N2*N3])
+#endif 
+    
+  return 0;
+}
 
 

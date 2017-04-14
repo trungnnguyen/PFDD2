@@ -4114,6 +4114,45 @@ fopen_rw(const char *filename)
   exit(1);
 }
 
+// material
+
+struct material {
+  double C11, C12, C44;
+};
+
+static void
+material_set(struct material *mc)
+{
+  /* Set material constants for material 0 */
+  //mc->C11 = 246.5E9; //Ni
+  //mc->C12 = 147.3E9;
+  //mc->C44 = 49.6E9;
+  mc->C11=168.4E9;//Cu
+  mc->C12=121.4E9;
+  mc->C44=23.5E9;
+    
+    
+  //mc->C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
+  //mc->C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
+  //mc->C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
+  //mc->C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
+  //mc->C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
+  //mc->C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
+  //mc->C11=107.3E9;//Al
+  //mc->C12=60.9E9;
+  //mc->C44=23.2E9;
+  //mc->C11 = 346.7E9; //Pt
+  //mc->C12 = 250.7E9;
+  //mc->C44 = 48.E9;
+  //mc->C11 = 227.1E9; //Pd
+  //mc->C12 = 176.E9;
+  //mc->C44 = 25.55E9;
+  //mc->C11 = 580.E9; //Ir
+  //mc->C12 = 242.E9;
+  //mc->C44 = 169.E9;
+	
+}
+
 int main(void)
 {
   int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
@@ -4128,7 +4167,8 @@ int main(void)
   float *dataeps, *dataepsd, *datasigma, *sigmav;
   double *f, *r;
   double d1, d2, d3, size3,ir,beta2;
-  double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
+  struct material mc;
+  double S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
   double *BB;
   double *FF;
   double *DD;
@@ -4233,35 +4273,8 @@ int main(void)
   ppoint_z = border;
   it_checkEbarrier = 0;
   plastic_max =3000;//original:3000
-	
-  /* Set material constants for material 0 */
-  //C11 = 246.5E9; //Ni
-  //C12 = 147.3E9;
-  //C44 = 49.6E9;
-  C11=168.4E9;//Cu
-  C12=121.4E9;
-  C44=23.5E9;
-    
-    
-  //C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
-  //C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
-  //C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
-  //C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
-  //C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
-  //C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
-  //C11=107.3E9;//Al
-  //C12=60.9E9;
-  //C44=23.2E9;
-  //C11 = 346.7E9; //Pt
-  //C12 = 250.7E9;
-  //C44 = 48.E9;
-  //C11 = 227.1E9; //Pd
-  //C12 = 176.E9;
-  //C44 = 25.55E9;
-  //C11 = 580.E9; //Ir
-  //C12 = 242.E9;
-  //C44 = 169.E9;
-	
+
+  material_set(&mc);
   b = 0.256E-9;
   dslip = 1.0;//4.0;//1.0;//N1/4/sqrt(3.0); /* in units of b*/
   a_f = 0.361E-9; //for Cu
@@ -4297,10 +4310,10 @@ int main(void)
   slipdirection[2] = sqrt(2)/2.;
   checkpass = 1; //mark: check whether the dislocation has enough energy to pass interface
 	
-  setMat( Cm,  Sm,  b2, dslip2, C11, C12, C44, b, dslip);  //set elastic constants, b2, dslip2 for different materials
+  setMat( Cm,  Sm,  b2, dslip2, mc.C11, mc.C12, mc.C44, b, dslip);  //set elastic constants, b2, dslip2 for different materials
 
   if(MT==1){	//isotropic material
-    C11 = 2.0*C44+C12;  
+    mc.C11 = 2.0*mc.C44+mc.C12;  
     printf("This is an isotropic material.\n");}
   else if(MT==2) printf("This is a cubic material.\n");  //cubic material
   else{
@@ -4309,15 +4322,15 @@ int main(void)
   }
     
     
-  mu = C44;//C44-(2.0*C44+C12-C11)/5.0;
-  //double ll = C12;//C12-(2.0*C44+C12-C11)/5.0;
-  //double mup= C11-C12-2*C44;
+  mu = mc.C44;//mc.C44-(2.0*mc.C44+mc.C12-mc.C11)/5.0;
+  //double ll = mc.C12;//mc.C12-(2.0*mc.C44+mc.C12-mc.C11)/5.0;
+  //double mup= mc.C11-mc.C12-2*mc.C44;
   //double young = mu*(3*ll+2*mu)/(ll+mu);
   //double nu = young/2.0/mu-1.0;
     
-  S11 = 1./3.*(1/(C11+2*C12) + 2/(C11-C12));
-  S12 = 1./3.*(1/(C11+2*C12) - 1/(C11-C12));
-  S44 = 1/C44;
+  S11 = 1./3.*(1/(mc.C11+2*mc.C12) + 2/(mc.C11-mc.C12));
+  S12 = 1./3.*(1/(mc.C11+2*mc.C12) - 1/(mc.C11-mc.C12));
+  S44 = 1/mc.C44;
     
   //double L = (double)(N3);
 	
@@ -4336,7 +4349,7 @@ int main(void)
   //double size = L*gs;
   size3 = b2[0]*b2[0]*b2[0]*N1*N2*N3*d1*d2*d3;
   for(is=0;is<NS;is++){
-    Asf2[is] = 0.0262;//the constant C in the code is C = Asf * C44 *dslip*b //
+    Asf2[is] = 0.0262;//the constant C in the code is C = Asf * mc.C44 *dslip*b //
   }
   Asf2[0] = 0.0064659518668288441;
   Asf2[1] = 0.0064659518668288441;
@@ -4344,13 +4357,13 @@ int main(void)
     Asf2[2] = 0.013307048604153731;
     Asf2[3] = 0.013307048604153731;
   }
-  // for Cu, B = 0.1519499J/m^2, for Ni, B = 0.3127156J/m^2, don't forget normalize by C44
-  // normalized by C44_Ni, B_cu = 0.003063505420775763, B_ni = 0.0063047508507583193
-  // normalized by C44_Cu, B_cu = 0.0064659518668288441, B_ni = 0.013307048604153731
-  // normalized by C44_Au, B_au = 0.0073077793951971436, B_ag = 0.0077033035051546385
-  // normalized by C44_Ag, B_au = 0.006949554901960784, B_ag = 0.007325690588235293
-  // normalized by C44_Au, B_au = 0.0073077793951971436, B_al = 0.011566588369596448
-  // normalized by C44_Al, B_au = 0.0045831116465568297, B_al = 0.0072540457231736353
+  // for Cu, B = 0.1519499J/m^2, for Ni, B = 0.3127156J/m^2, don't forget normalize by mc.C44
+  // normalized by mc.C44_Ni, B_cu = 0.003063505420775763, B_ni = 0.0063047508507583193
+  // normalized by mc.C44_Cu, B_cu = 0.0064659518668288441, B_ni = 0.013307048604153731
+  // normalized by mc.C44_Au, B_au = 0.0073077793951971436, B_ag = 0.0077033035051546385
+  // normalized by mc.C44_Ag, B_au = 0.006949554901960784, B_ag = 0.007325690588235293
+  // normalized by mc.C44_Au, B_au = 0.0073077793951971436, B_al = 0.011566588369596448
+  // normalized by mc.C44_Al, B_au = 0.0045831116465568297, B_al = 0.0072540457231736353
     
   printf ("core energy C = %lf \n", Asf2[0] * mu * dslip2[0]*b2[0]);
 	
@@ -4387,8 +4400,8 @@ int main(void)
     frec(fx, fy, fz, d1, d2, d3);
     	   
     printf("Set interaction matrix\n");
-    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, C11, C12, C44, xi_o);
-    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  C11,  C12,  C44, xi_o,theta1);
+    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, mc.C11, mc.C12, mc.C44, xi_o);
+    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  mc.C11,  mc.C12,  mc.C44, xi_o,theta1);
     printf("HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX\n");
     //     getchar();
     Gmatrix (GG, beta2, xb, xn, fx, fy, fz);
@@ -4560,7 +4573,7 @@ int main(void)
 	  strain_average = 0.0;
           
 	  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	  energy_in2 = Imatrix(II, xi, KK, C11, C12, C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	  energy_in2 = Imatrix(II, xi, KK, mc.C11, mc.C12, mc.C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
             
           
 	  vflag=0;
@@ -4645,7 +4658,7 @@ int main(void)
 	    if (it==NT-1) {
 	      printf("go till here!!!\n");
 	    }
-	    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, C11, C12, C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
+	    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, mc.C11, mc.C12, mc.C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
 	    /*average strain*/
 	    for(i=0;i<ND;i++){
 	      for (j=0;j<ND;j++){
@@ -4739,7 +4752,7 @@ int main(void)
 	  // #pragma acc data copyin(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3]) 
 	  // {
 	  //mark  energy_in
-	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
 	  //  }
 	  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
 	  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
@@ -4786,11 +4799,11 @@ int main(void)
 	    printf("evolve plastic then evolve interface\n");
 	    do {
 	      gammalast = gamma;
-	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
+	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,mc.C44,it_plastic);
 	      checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
 	      printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
 	      it_plastic = it_plastic + 1;
-	      interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint_x,ppoint_y,ppoint_z,C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
+	      interfacevolv(xi,penetrationstress,D00,D01,D10,D11,lam1,lam2,stressthreshold,&checkpass,border,ppoint_x,ppoint_y,ppoint_z,mc.C44,a_s,a_f,penetrationstress2,&it_checkEbarrier,ofcheckEbarrier);
 	      for (isa=0; isa<NSV; isa++) {
 		for (i=0; i<N1; i++) {
 		  for (j=0; j<N2; j++) {
@@ -4901,7 +4914,7 @@ int main(void)
 		
 		
 		if (1) {//checkpass==1
-		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
+		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
 		  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
 		  energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);
 		  energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
@@ -4910,7 +4923,7 @@ int main(void)
 		  //mark check z direction energy density distribution
 		  /*   fprintf(ofzEdensity, "zone   I = 25\n");
 		       for (k=ppoint_z-12;k<ppoint_z+13 ; k++) {
-		       energy_in = Energy_calculation(fx,fy,fz,eps,epsv,C11,C12,C44,data,interface_n,ppoint_x,ppoint_y,k);
+		       energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,k);
 		       energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,k);
 		       if (k==ppoint_z) {
 		       energy_Residual = ResidualEnergy(xi,interface_n,ppoint_x,ppoint_y,ppoint_z,D00,D01,D10,D11);

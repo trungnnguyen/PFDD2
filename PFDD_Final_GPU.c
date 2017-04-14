@@ -4037,14 +4037,25 @@ calc_data2_datag(float *data2, float *datag, float *data, double *BB, double *GG
 }
 
 static void
-calc_strain_stress(float *databeta, float *dataeps, float *data, double *FF, double *FFv,
-		   double epsv[NV][ND][ND], double d1, double d2, double d3,
-		   int size3, FILE *of3, int it, int itp, double avepst[N1][N2][N3][ND][ND])
+calc_strain_stress(float *databeta, float *dataeps, float *dataepsd, float *datasigma, float *data,
+		   float *sigmav, double *xi, double *FF, double *FFv,
+		   double eps[NS][ND][ND], double epsv[NV][ND][ND], double d1, double d2, double d3,
+		   int size3, FILE *of3, FILE*of5, int it, int itp, double avepst[N1][N2][N3][ND][ND],
+		   double avesigma[ND][ND], double theta1[NMAT][ND][ND],
+		   double slipdirection[ND], double xn[NS][ND],
+		   double *penetrationstress, double *penetrationstress2,
+		   int t_bwvirtualpf, int border, int ppoint[3],
+		   const struct material *mc)
 {
   strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
   if (it==NT-1) {
     printf("go till here!!!\n");
   }
+
+  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv,
+	 mc->C11, mc->C12, mc->C44, of5, it,itp, avesigma,theta1,
+	 slipdirection,xn,penetrationstress,penetrationstress2,
+	 t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
 }
 
 int main(void)
@@ -4422,9 +4433,14 @@ int main(void)
 	  
 	/*strain & stress calculation*/
 	if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))) {
-	  calc_strain_stress(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3,
-			     size3, of3, it, itp, avepst);
-	  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, mc.C11, mc.C12, mc.C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
+	  calc_strain_stress(databeta, dataeps, dataepsd, datasigma, data,
+			     sigmav, xi, FF, FFv,
+			     eps, epsv, d1, d2, d3,
+			     size3, of3, of5, it, itp, avepst,
+			     avesigma, theta1,
+			     slipdirection, xn,
+			     penetrationstress, penetrationstress2,
+			     t_bwvirtualpf, border, ppoint, &mc);
 	  /*average strain*/
 	  for(i=0;i<ND;i++){
 	    for (j=0;j<ND;j++){

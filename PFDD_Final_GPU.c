@@ -1248,7 +1248,7 @@ void in_virtual_homo(float * data, double * xi, double * xi_bc)
 
 void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o,int border,int ppoint_x, int ppoint_y, int ppoint_z){
   
-  int na0, na1, nao, is, ism, iss, i, j, k;
+  int nao, is, ism, iss, i, j, k;
     
   //double rmin1 = (double)N1/4.0-3.0;//(double)N1/6.0;
   //double rmin2 = (double)N1/6.0;
@@ -1281,9 +1281,6 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
       for(i=0;i<N1;i++) {	
 	for(j=0;j<N2;j++)	{
 	  for(k=0;k<N3;k++){		
-	    na0 = 2*I4(i, j, k, is);
-	    //int na = 2*I3(i, j, k);
-	    na1 = na0+1;
 	    nao = I3(i, j, k);
 	    if(is<NS)    {
 	      XI(i,j,k,is, 0) = 0.0;      //(k+1)+(j+1)*10.0+(i+1)*100.0
@@ -1301,11 +1298,11 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 		    if (xi_o[nao]==0) {
 		      //		    if(k>0 && k<N3/4)
 		      if(k>0 && k<768) { 
-			xi[na0] = 0.0;
+			XI(i,j,k, is, 0) = 0.0;
 		      }
 		      //		    if(k>=N3/4 && k<N3/2 )
 		      if(k>=768 && k<1024 ) { 
-			xi[na0] = 1.0;
+			XI(i,j,k, is, 0) = 1.0;
 		      }
 		    }                 
 		  }           
@@ -1314,17 +1311,17 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 		    if (i==ppoint_x) {
 		  
 		    if (k>=ppoint_z-40&&k<ppoint_z-3) {
-		    xi[na0] = 1.0;
+		    XI(i,j,k, is, 0) = 1.0;
 		    }
 		    if (k>=ppoint_z-3) {//k<=border&&k>=ppoint_z-3
-		    xi_bc[na0] = 0.0;
-		    xi_bc[na1] = 0.0;
+		    XI_BC(i,j,k, is, 0) = 0.0;
+		    XI_BC(i,j,k, is, 1) = 0.0;
 		    }
                   
 		    }
 		    }
 		*/ 
-		fprintf(Order_Param1,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
+		fprintf(Order_Param1,"%d,%d,%d,%lf\n",i,j,k,XI(i,j,k, is, 0));
 	      }
 	    
 	      //2nd material
@@ -1334,18 +1331,18 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 		    if (xi_o[nao]==1) {
 		      //		   if(k>=N3/2 && k<3*N3/4)
 		      if (k>=1024 && k<1280) { 
-			xi[na0] = 1.0;
+			XI(i,j,k, is, 0) = 1.0;
 		      }
 		      //		    if(k>=3*N3/4 && k<N3)
 		      if (k>=1280 && k<2048) { 
-			xi[na0] = 0.0;
+			XI(i,j,k, is, 0) = 1.0;
 		      }
 		    }
 		    /*  if ((xi_o[nao]==1 && xi_o[I3(i, j, k-1]==0) &&(k!=0&&i!=0)) {
 			#ifndef _OPENACC
 			printf("residual here, i=%d, j=%d, k=%d,is=%d\n",i,j,k,is);
 			#endif
-			xi[na0] = 0.4737370342414563;//Cu/Ni  0.9716099719347492;//Au/Ag  1.0292195725507935;//Ag/Au  2.110875713152033;//Ni/Cu   0.483474845511;//Al/Pt  2.068359934927055;//Pt/Al
+			XI(i,j,k, is, 0) = 0.4737370342414563;//Cu/Ni  0.9716099719347492;//Au/Ag  1.0292195725507935;//Ag/Au  2.110875713152033;//Ni/Cu   0.483474845511;//Al/Pt  2.068359934927055;//Pt/Al
                     
 			} */
 		  }
@@ -1353,13 +1350,13 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 		if (iss==1) {
 		  if (i==ppoint_x) {
 		    if (k>border&&k<N3-2) {
-		      xi_bc[na0] = 0.0;
-		      xi_bc[na1] = 0.0;
+		      XI_BC(i,j,k, is, 0) = 0.0;
+		      XI_BC(i,j,k, is, 1) = 0.0;
 		    }
                   
 		  }
 		}
-		fprintf(Order_Param2,"%d,%d,%d,%lf\n",i,j,k,xi[na0]);
+		fprintf(Order_Param2,"%d,%d,%d,%lf\n",i,j,k,XI(i,j,k, is, 0));
 	      }
 	   
 	      //end inclined plane 
@@ -1367,25 +1364,25 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 	      // one screw dislocation, for xn = (001), xb = (010)
 	      /*if(k==N3/2){
 		if(i<N1/2){
-		xi[na0] = 1.0;
+		XI(i,j,k, is, 0) = 1.0;
 		}
 		}*/ //end of one dislocation
 	    
 	      // random obstacles
-	      /*		if(iss == 0 && xi_bc[na0] == 0.0){
+	      /*		if(iss == 0 && XI_BC(i,j,k, is, 0) == 0.0){
 				double obs = 1.0 * (rand()/((double)RAND_MAX + 1));
 				if(obs < setobs){
-				xi_bc[na0] = 1.0;
-				if(obs < setobs/2.0) xi[na0]=2.0;
-				else xi[na0]=-2.0;
-				//			xi[na0] = 0.0;
+				XI_BC(i,j,k, is, 0) = 1.0;
+				if(obs < setobs/2.0) XI_BC(i,j,k, is, 0) = 2.0;
+				else XI(i,j,k, is, 0)=-2.0;
+				//			XI(i,j,k, is, 0) = 0.0;
 				}
 				}
 				else if(iss != 0){
-				if(xi_bc[na] == 1.0){
-				xi_bc[na0] = 1.0;
-				xi[na0] = xi[na];
-				//			xi[na0] = 0.0;
+				if(XI_BC(i,j,k, 0, 0) == 1.0){
+				XI_BC(i,j,k, is, 0) = 1.0;
+				XI(i,j,k, is, 0) = XI(i,j,k, 0, 0);
+				//			XI(i,j,k, is, 0) = 0.0;
 				}
 				}    */    //end of random obstacles
 	    
@@ -1532,7 +1529,7 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
 				it=NT-1;
 			      }
 			  }//else
-		      }//xi_bc[na0]==0.0
+		      }//XI_BC==0.0
 		  }//it < NT-NTD
 		DATA(i,j,k, isa, 0) = XI(i,j,k, isa, 0);
 		DATA(i,j,k, isa, 1) = XI(i,j,k, isa, 1);

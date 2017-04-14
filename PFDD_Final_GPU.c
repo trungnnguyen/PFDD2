@@ -47,6 +47,13 @@ array4d_alloc(int nx, int ny, int nz, int m)
   return arr;
 }
 
+float *
+array5d_alloc(int nx, int ny, int nz, int m, int n)
+{
+  float *arr = calloc(2 * nx * ny * nz * m * n, sizeof(*arr));
+  return arr;
+}
+
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
 #define NMAT 2     //number of materials, each with defined grain orientation: 1 - homogeneous
 #define N1 32      //N1 dimension
@@ -265,8 +272,8 @@ int main(void)
   static double eps[NS][ND][ND],sigma[N1][N2][N3][ND][ND],epsv[NV][ND][ND],q[N1][N2][N3], avesigma[ND][ND], avepsd[ND][ND], avepst[N1][N2][N3][ND][ND], aveps[ND][ND];
   static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
   double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
-  float *_data, *data2, *datag, *_databeta;
-  float *data, *databeta, *dataeps, *dataepsd, *datasigma, *sigmav;
+  float *_data, *data2, *datag, *databeta;
+  float *data, *dataeps, *dataepsd, *datasigma, *sigmav;
   double *f, *r;
   double d1, d2, d3, size3,ir,beta2;
   double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
@@ -349,8 +356,7 @@ int main(void)
   data = _data - 1;
   data2 = array4d_alloc(N1, N2, N3, NSV);
   datag = array4d_alloc(N1, N2, N3, NS);
-  _databeta = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3))*sizeof(float));
-  databeta = _databeta - 1;
+  databeta = array5d_alloc(N1, N2, N3, ND, ND);
   dataeps = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
   dataepsd = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
   datasigma = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
@@ -1279,7 +1285,7 @@ int main(void)
     free(_data);
     free(data2);
     free(datag);
-    free(_databeta);
+    free(databeta);
     free(dataeps);
     free(dataepsd);
     free(datasigma);
@@ -1796,12 +1802,11 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 
 void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND],int nf[4], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
 {
-  
-  int i,j,is,k1,k2,k3,na0,na,nad1,nad2,nad3,nad4,nb;
+  int i,j,is,k1,k2,k3,na0,na,nad1,nad2,nb;
   int na11, na12,na13,na21, na22, na23, na31, na32, na33;
   
   for (i=1; i<2*N1*N2*N3*ND*ND+1; i++){
-    databeta[i] = 0;
+    databeta[i-1] = 0;
     dataeps[i] = 0;
   }
   
@@ -1818,13 +1823,13 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	      nad2 = na0+2;
 	      if(is<NS){
 		nb = k3+(k2)*N3+(k1)*N2*N3+(is)*N1*N2*N3+i*N1*N2*N3*NS+j*N1*N2*N3*NS*ND;
-		databeta[na+1] += data[nad1] * FF[nb];
-		databeta[na+2] += data[nad2] * FF[nb];
+		databeta[na  ] += data[nad1] * FF[nb];
+		databeta[na+1] += data[nad2] * FF[nb];
 	      }
 	      else{
 		nb = k3+(k2)*N3+(k1)*N2*N3+(is-NS)*N1*N2*N3+i*N1*N2*N3*NV+j*N1*N2*N3*NV*ND;
-		databeta[na+1] += data[nad1] * FFv[nb];
-		databeta[na+2] += data[nad2] * FFv[nb];
+		databeta[na  ] += data[nad1] * FFv[nb];
+		databeta[na+1] += data[nad2] * FFv[nb];
 	      }
 	    }
 	  }
@@ -1843,12 +1848,11 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
   //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
   //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
 
-  float *_databeta = databeta + 1;
 #ifdef USE_CUFFT
-#pragma acc data copy(_databeta[0:2*N1*N2*N3*ND*ND])
-#pragma acc host_data use_device(_databeta)
+#pragma acc data copy(databeta[0:2*N1*N2*N3*ND*ND])
+#pragma acc host_data use_device(databeta)
 #endif
-  fft_backward(_databeta, ND*ND);	/* inverse FFT for strain*/
+  fft_backward(databeta, ND*ND);	/* inverse FFT for strain*/
 	  
   //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
   //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
@@ -1867,8 +1871,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
     
     
     
-  for (i=1; i<2*N1*N2*N3*ND*ND+1; i++){
-    databeta[i] = databeta[i]/(N1*N2*N3);
+  for (i = 0; i < 2*N1*N2*N3*ND*ND; i++){
+    databeta[i] = databeta[i] / (N1*N2*N3);
   }
 
   //add in other two terms in strain
@@ -1878,8 +1882,7 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	for(k2=0;k2<N2;k2++){
 	  for (k3=0;k3<N3;k3++){	    
 	    na0 = 2*(k3+k2*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
-	    nad1=na0+1;
-	    databeta[nad1] += avepst[k1][k2][k3][i][j];
+	    databeta[na0] += avepst[k1][k2][k3][i][j];
 	  }
 	}
       }
@@ -1895,10 +1898,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	    nad1=na0+1;
 	    nad2=na0+2;
 	    na = 2*(k3+k2*N3+(k1)*N2*N3+j*N1*N2*N3+i*N1*N2*N3*ND);
-	    nad3=na+1;
-	    nad4=na+2;
-	    dataeps[nad1] = (databeta[nad1]+databeta[nad3])/2;
-	    dataeps[nad2] = (databeta[nad2]+databeta[nad4])/2;
+	    dataeps[nad1] = (databeta[na0  ] + databeta[na  ])/2;
+	    dataeps[nad2] = (databeta[na0+1] + databeta[na+1])/2;
 	  }
 	}
       }

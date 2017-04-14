@@ -38,6 +38,12 @@ WTime(void)
 #define I4(i,j,k,m)   I5(i,j,k,m,0)
 #define I3(i,j,k)     I4(i,j,k,0)
 
+float *
+array4d_alloc(int nx, int ny, int nz, int m)
+{
+  float *arr = calloc(2 * nx * ny * nz * m, sizeof(*arr));
+  return arr;
+}
 
 #define MT 1	    //Material type: 1 - isotropic; 2 - cubic
 #define NMAT 2     //number of materials, each with defined grain orientation: 1 - homogeneous
@@ -337,10 +343,10 @@ int main(void)
   sizexi = 2*(NSV)*(N1)*(N2)*(N3);
   sizexi_bc = 2*(NSV)*(N1)*(N2)*(N3);
 
-  _data =  malloc((2*(NSV)*(N1)*(N2)*(N3))*sizeof(float));
+  _data = array4d_alloc(N1, N2, N3, NSV);
   data = _data - 1;
-  _data2 =  malloc((2*(NSV)*(N1)*(N2)*(N3))*sizeof(float));
-  _datag=malloc((2*(NS*N1*N2*N3))*sizeof(float));
+  _data2 = array4d_alloc(N1, N2, N3, NSV);
+  _datag = array4d_alloc(N1, N2, N3, NS);
   datag = _datag - 1;
   _databeta = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3))*sizeof(float));
   databeta = _databeta - 1;

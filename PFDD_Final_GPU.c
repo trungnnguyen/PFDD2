@@ -58,6 +58,7 @@ WTime(void)
 
 #define DATA(k1,k2,k3,m, c)  C4(data , k1,k2,k3,m, c)
 #define DATA2(k1,k2,k3,m, c) C4(data2, k1,k2,k3,m, c)
+#define DATAG(k1,k2,k3,m, c) C4(datag, k1,k2,k3,m, c)
 #define XI(k1,k2,k3,m, c)    C4(xi   , k1,k2,k3,m, c)
 #define XI_BC(k1,k2,k3,m, c) C4(xi_bc, k1,k2,k3,m, c)
 
@@ -3466,7 +3467,7 @@ return(en);
 
 double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float *data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *datag,float *data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
 {
-  int isa,is, i, j, k, na0,na1;
+  int isa,is, i, j, k;
   double gamma;
   gamma = 0.0;
   for(is=0;is<NS;is++){
@@ -3476,21 +3477,18 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float *d
     for (i=0; i<N1; i++) {
       for (j=0; j<N2; j++) {
 	for (k=0; k<N3; k++) {
-	  na0 = I4(i,j,k,isa);
-	  na1 = na0+1;
-	  //int nad2 = na0+2;
-	  if(xi_bc[na0]==0){//evolve bulk phase field
+	  if(XI_BC(i,j,k, isa, 0)==0){//evolve bulk phase field
 	    if(0){	//does not apply gradient term
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+C4(datag, i,j,k, isa, 0)/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(data2, i,j,k, isa, 1)/nsize + C4(datag, i,j,k, isa, 0)/nsize);
+	      XI(i,j,k, isa, 0) -= CD2[isa]*(uq2*DATA2(i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*XI(i,j,k, isa, 0))-tau[i][j][k][isa]/dslip2[isa]+DATAG(i,j,k, isa, 0)/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      XI(i,j,k, isa, 1) -= CD2[isa]*(uq2*DATA2(i,j,k, isa, 1)/nsize + DATAG(i,j,k, isa, 0)/nsize); // FIXME? real component of DATAG is correct?
 	    }
 	    else{
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-uq2*CD2[isa]*(C4(data2, i,j,k, isa, 1)/nsize);
+	      XI(i,j,k, isa, 0) -= CD2[isa]*(uq2*DATA2(i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*XI(i,j,k, isa, 0))-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      XI(i,j,k, isa, 1) -= uq2*CD2[isa]*(DATA2(i,j,k, isa, 1)/nsize);
 	    }
 	  }
-	  gamma += xi[na0]/nsize;
-	  gamma1[isa] += xi[na0]/nsize;
+	  gamma += XI(i,j,k, isa, 0)/nsize;
+	  gamma1[isa] += XI(i,j,k, isa, 0)/nsize;
 	}//end i
       }//end j
     }//end k

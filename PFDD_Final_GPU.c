@@ -580,7 +580,6 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
 {
   
   int i,j,k,l,m,k1,k2,k3,ka,kb;
-  static double G2[NS][NS][N1][N2][N3];
   int ep[ND][ND][ND];
   
   for(i=0;i<ND;i++){
@@ -598,20 +597,19 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
 	
 	for(ka=0;ka<NS;ka++){
 	  for(kb=0;kb<NS;kb++){
-	    G2[ka][kb][k1][k2][k3] = 0.0;
+	    D5(GG, k1,k2,k3,ka,kb) = 0.;
 	    for (i=0; i<ND; i++){
 	      for (j=0; j<ND; j++){
 		for (k=0; k<ND; k++){
 		  for (l=0; l<ND; l++){
 		    for (m=0; m<ND; m++){
-		      //G2[ka][kb][k1][k2][k3] += beta2*fk[j]*fk[l]*(xb[ka][i]*xb[kb][k]+xb[ka][k]*xb[kb][i]);
-		      G2[ka][kb][k1][k2][k3] += 0.5*beta2*(ep[i][j][k]*ep[i][l][m]*xn[ka][j]*xn[kb][l] +ep[i][j][k]*ep[i][l][m]*xn[kb][j]*xn[ka][l])*fk[k]*fk[m];
+		      //D5(GG, k1,k2,k3,ka,kb) += beta2*fk[j]*fk[l]*(xb[ka][i]*xb[kb][k]+xb[ka][k]*xb[kb][i]);
+		      D5(GG, k1,k2,k3,ka,kb) += 0.5*beta2*(ep[i][j][k]*ep[i][l][m]*xn[ka][j]*xn[kb][l] +ep[i][j][k]*ep[i][l][m]*xn[kb][j]*xn[ka][l])*fk[k]*fk[m];
 		    }
 		  }
 		}
 	      }
 	    }
-	    D5(GG, k1,k2,k3,ka,kb) = G2[ka][kb][k1][k2][k3];
 	  }
 	}
       }/*k3*/
@@ -622,7 +620,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
 float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *xi, int nsize, double sigma[N1][N2][N3][ND][ND], double S11, double S12, double S44, double mu,float energy_in3,float *energy_in4, float *strain_average,int border,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
 {
   
-  int i,j,k,l,is,k1,k2,k3,nb,u,v,nbv;
+  int i,j,k,l,is,k1,k2,k3,u,v;
   double S[ND][ND][ND][ND];
   float energy_stressTimePf;
   double strain_p[ND][ND],strain_v[ND][ND];

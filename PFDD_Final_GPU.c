@@ -356,7 +356,7 @@ int main(void)
   datag = array4d_alloc(N1, N2, N3, NS);
   databeta = array5d_alloc(N1, N2, N3, ND, ND);
   dataeps = array5d_alloc(N1, N2, N3, ND, ND);
-  dataepsd = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
+  dataepsd = array5d_alloc(N1, N2, N3, ND, ND);
   datasigma = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
 
   sigmav = malloc(2*N1*N2*N3*NV*sizeof(float));
@@ -856,7 +856,7 @@ int main(void)
 	    if (it==NT-1) {
 	      printf("go till here!!!\n");
 	    }
-	    stress (dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, C11, C12, C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
+	    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, C11, C12, C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z);
 	    /*average strain*/
 	    for(i=0;i<ND;i++){
 	      for (j=0;j<ND;j++){
@@ -1910,8 +1910,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
   return;
 }
 
-void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav
-	    , double *xi, double eps[NS][ND][ND], double epsv[NV][ND][ND],
+void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
+	    double *xi, double eps[NS][ND][ND], double epsv[NV][ND][ND],
 	    double C11, double C12, double C44, FILE *of5, int it, int itp,
 	    double avesigma[ND][ND],double theta1[NMAT][ND][ND], double slipdirection[ND],
 	    double xn[NS][ND], double *penetrationstress, double * penetrationstress2,
@@ -1919,7 +1919,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,k1,k2,k3,na,nb,na0,nad1,y;
+  int i,j,k,l,m,k1,k2,k3,na,nb,na0,y;
   int na11, na12,na13, na22, na23, na33;
   int is;
   double C[ND][ND][ND][ND];
@@ -1964,7 +1964,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav
   }
   for (i=1; i<2*N1*N2*N3*ND*ND+1; i++){
     datasigma[i] =0;
-    dataepsd[i]=0;
+    dataepsd[i-1] = 0.;
   }
     
   for(is=0;is<NSV;is++){
@@ -1976,10 +1976,10 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav
 	      na = 2*(k1*N2*N3 + k2*N3 + k3 + i*N1*N2*N3+j*N1*N2*N3*ND);
 	      nb = 2*(k3+(k2)*N3+(k1)*N3*N2+(is)*N1*N2*N3);
 	      if (is<NS){
-		dataepsd[na+1] += eps[is][i][j] * xi[nb];
+		dataepsd[na] += eps[is][i][j] * xi[nb];
 	      }
 	      if (is >=NS){
-		dataepsd[na+1] += epsv[is-NS][i][j] * xi[nb];
+		dataepsd[na] += epsv[is-NS][i][j] * xi[nb];
 	      }
 	    }
 	  }
@@ -1996,9 +1996,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav
 	    for (k=0;k<ND;k++){
 	      for (l=0;l<ND;l++){
 		na0 = 2*(k1*N2*N3 + k2*N3 + k3 + k*N1*N2*N3+l*N1*N2*N3*ND);
-		nad1 = na0+1;
-		//int nad2 = na0+2;
-		datasigma[na+1] += C[i][j][k][l]*(dataeps[na0]-dataepsd[nad1]);
+		datasigma[na+1] += C[i][j][k][l]*(dataeps[na0]-dataepsd[na0]);
 	      }
 	    }
 	    avesigma[i][j] += datasigma[na+1]/N1/N2/N3;

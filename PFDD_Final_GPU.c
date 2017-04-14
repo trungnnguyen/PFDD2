@@ -38,6 +38,8 @@ WTime(void)
 #define I4(i,j,k,m)   I5(i,j,k,m,0)
 #define I3(i,j,k)     I4(i,j,k,0)
 
+#define C4(data, i,j,k,m, c) (data[2*I4(i, j, k, m) + c])
+
 float *
 array4d_alloc(int nx, int ny, int nz, int m)
 {
@@ -802,15 +804,15 @@ int main(void)
 	      for(i=0;i<N1;i++){
 		for(j=0;j<N2;j++){
 		  for(k=0;k<N3;k++){
-		    na0 = 2*(i*N2*N3 + j*N3 + k + isb*N1*N2*N3);
-		    na = 2*(i*N2*N3 + j*N3 + k + isa*N1*N2*N3);
+		    na0 = 2*I4(i, j, k, isb);
+		    na =  2*I4(i, j, k, isa);
 		    if(isa<NS){
 		      na1 = na0+1;
 		      nad1 = na0+1;
 		      nad2 = na0+2;
 		      nb = I5(i, j, k, isa, isb);
-		      _data2[na  ] += data[nad1] * BB[nb];
-		      _data2[na+1] += data[nad2] * BB[nb];
+		      C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
+		      C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 		      if(isb<NS){
 			datag[na+1] += data[nad1] * GG[nb];
 			datag[na+2] += data[nad2] * GG[nb];
@@ -1072,8 +1074,8 @@ int main(void)
 			    nad1 = na0+1;
 			    nad2 = na0+2;
 			    nb = I5(i, j, k, isa, isb);
-			    _data2[na  ] += data[nad1] * BB[nb];
-			    _data2[na+1] += data[nad2] * BB[nb];
+			    C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
+			    C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 			    if(isb<NS){
 			      datag[na+1] += data[nad1] * GG[nb];
 			      datag[na+2] += data[nad2] * GG[nb];
@@ -1083,8 +1085,8 @@ int main(void)
 			    nad1 = na0+1;
 			    nad2 = na0+2;
 			    nb = I5V(i, j, k, isb, isa-NS);
-			    _data2[na  ] += data[nad1] * DD[nb];
-			    _data2[na+1] += data[nad2] * DD[nb];
+			    C4(_data2, i,j,k, isa, 0) += data[nad1] * DD[nb];
+			    C4(_data2, i,j,k, isa, 1) += data[nad2] * DD[nb];
 			  }
 			}
 		      }
@@ -2572,7 +2574,7 @@ void initial(float * data, double * xi, double * xi_bc, double setobs, int * xi_
 
 void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, int nf[4], double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
-  int isa, isb, i, j, k, na0, nas, na,na1, nad1, nad2, nb, u,v, naij, nao, indm[2];
+  int isa, isb, i, j, k, na0, nas, na1, nad1, nad2, nb, u,v, naij, nao, indm[2];
   float sigr, sigi,dE,dE_imag;
   dE=0.0;
   dE_imag = 0.0;
@@ -2593,14 +2595,13 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 	      for(k=0;k<N3;k++)
 		{
 		  na0 = 2*I4(i, j, k, isb);
-		  na  = 2*I4(i, j, k, isa);
 		  if(isa >= NS )
 		    {
 		      nad1 = na0+1;
 		      nad2 = na0+2;
 		      nb = I5V(i, j, k, isb, isa-NS);
-		      _data2[na  ] += data[nad1] * DD[nb];
-		      _data2[na+1] += data[nad2] * DD[nb];
+		      C4(_data2, i,j,k, isa, 0) += data[nad1] * DD[nb];
+		      C4(_data2, i,j,k, isa, 1) += data[nad2] * DD[nb];
 		    }
 		}
 	}
@@ -2644,14 +2645,13 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 	      {
 		na0 = 2*I4(i, j, k, isa);
 		nas = 2*I4(i, j, k, isa-NS);
-		na = 2*I3(i, j, k);
 		nao = I3(i, j, k);
 		na1 = na0+1;
 		nad1 = na0+1;
 		nad2 = na0+2;
 		naij = I4(i, j, k, u + v*ND);
-		sigr = -(_data2[na0  ]/(N1*N2*N3)-sigmal[naij]);
-		sigi = -(_data2[na0+1]/(N1*N2*N3));
+		sigr = -(C4(_data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);
+		sigi = -(C4(_data2, i,j,k, isa, 1)/(N1*N2*N3));
 		sigmav[nas] = sigr;
 		sigmav[nas+1] = sigi;
 		if(it < NT-NTD)
@@ -2662,9 +2662,10 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 			//	printf("nam= %d, u=%d, v=%d, dE1=%e, dE2=%e, dE3=%e\n",xi_o[nao],u,v,data2[nad1]/(N1*N2*N3),II[naij],-sigmal[naij]);
 			if(xi_o[nao] == -1)
 			  {
-			    if(it==NT-NTD-1 && i==0 && j==0 && k>N3/2) printf("%d (%d,%d,%d) %e %e %e \n",isa,i,j,k,_data2[na0]/(N1*N2*N3), -sigmal[naij],-CDv*(_data2[na0]/(N1*N2*N3)-sigmal[naij]));
-			    xi[na0] = xi[na0]-CDv*(_data2[na0]/(N1*N2*N3)-sigmal[naij]);///(ceil((it)/100)+1);
-			    xi[na1] = xi[na1]-CDv*(_data2[na0])/(N1*N2*N3);///(ceil((it)/100)+1);
+			    if(it==NT-NTD-1 && i==0 && j==0 && k>N3/2)
+			      printf("%d (%d,%d,%d) %e %e %e \n",isa,i,j,k,C4(_data2, i,j,k, isa, 0)/(N1*N2*N3), -sigmal[naij],-CDv*(C4(_data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]));
+			    xi[na0] = xi[na0]-CDv*(C4(_data2, i,j,k, isa, 0)/(N1*N2*N3)-sigmal[naij]);///(ceil((it)/100)+1);
+			    xi[na1] = xi[na1]-CDv*(C4(_data2, i,j,k, isa, 0))/(N1*N2*N3);///(ceil((it)/100)+1);
 			    //	  printf("%d %lf %lf\n",ceil((itt+1)/10),CDv/ceil((itt+1)/10),xi[na0]);
 			    // xi_sum[na] = xi_sum[na] + xi[na0];
 			    //xi_sum[na+1] = xi_sum[na+1] + xi[na1];
@@ -2681,23 +2682,20 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 				if(dS[xi_o[nao]][indv][indv] > 0.0)
 				  {
 				    //printf("K<0!!! Material 0 should be softer\n");
-				    dE = _data2[na0]/(N1*N2*N3)+II[naij]-sigmal[naij];
-				    dE_imag = _data2[na0+1]/(N1*N2*N3);
+				    dE      = C4(_data2, i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
+				    dE_imag = C4(_data2, i,j,k, isa, 1)/(N1*N2*N3);
 
 				    xi[na0] = xi[na0]+CDv*dE;
 				    xi[na1] = xi[na1]+CDv*dE_imag;
-                                            
-                                          
 				  }
 				else
 				  {
 				    //printf("K>0!!! Material 0 should be stiffer\n");
-				    dE = _data2[na0]/(N1*N2*N3)+II[naij]-sigmal[naij];
-				    dE_imag = _data2[na0+1]/(N1*N2*N3);
+				    dE      = C4(_data2, i,j,k, isa, 0)/(N1*N2*N3)+II[naij]-sigmal[naij];
+				    dE_imag = C4(_data2, i,j,k, isa, 1)/(N1*N2*N3);
                                             
 				    xi[na0] = xi[na0]-CDv*dE;
 				    xi[na1] = xi[na1]-CDv*dE_imag;
-                                    
 				  }
 
 				//mark 
@@ -2720,7 +2718,7 @@ void virtualevolv(float * data, float *_data2, float * sigmav, double * DD, doub
 			      }
 			    if(fabs(xi[na0])>1E10)
 			      {
-				printf("u=%d, v=%d, ZLdC= %d, dE1=%e, dE2= %e, dE3=%e \n",u,v,ZLdC[xi_o[nao]][indv],_data2[na0]/(N1*N2*N3),II[naij],-sigmal[naij]);
+				printf("u=%d, v=%d, ZLdC= %d, dE1=%e, dE2= %e, dE3=%e \n",u,v,ZLdC[xi_o[nao]][indv],C4(_data2, i,j,k, isa, 0)/(N1*N2*N3),II[naij],-sigmal[naij]);
 				it=NT-1;
 			      }
 			  }//else
@@ -4707,12 +4705,12 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * 
 	  //int nad2 = na0+2;
 	  if(xi_bc[na0]==0){//evolve bulk phase field
 	    if(0){	//does not apply gradient term
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*_data2[na0  ]/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+datag[nad1]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-CD2[isa]*(uq2*_data2[na0+1]/nsize + datag[nad1]/nsize);
+	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+datag[nad1]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 1)/nsize + datag[nad1]/nsize);
 	    }
 	    else{
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*_data2[na0  ]/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-uq2*CD2[isa]*(_data2[na0+1]/nsize);
+	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      xi[na1] = xi[na1]-uq2*CD2[isa]*(C4(_data2, i,j,k, isa, 1)/nsize);
 	    }
 	  }
 	  gamma += xi[na0]/nsize;

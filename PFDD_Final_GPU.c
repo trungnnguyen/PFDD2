@@ -4098,8 +4098,21 @@ float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoin
 }
 
 
+static FILE *
+fopen_rw(const char *filename)
+{
+  FILE *of = fopen(filename, "r+");
+  if (of) {
+    return of;
+  }
+  of = fopen(filename, "w+");
+  if (of) {
+    return of;
+  }
 
-
+  printf("File could not be opened: %s\n", filename);
+  exit(1);
+}
 
 int main(void)
 {
@@ -4201,34 +4214,7 @@ int main(void)
   ofzEdensity = fopen("zE.dat","w");
 	
   choice=1; //choice=1 start w/o reading data; choice=2, read in xi and xi_bc.
-	
-  if((ofxi = fopen("xi.dat","r+")) == NULL){
-    if((ofxi = fopen("xi.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-  if((ofxi_bc = fopen("xi_bc.dat","r+")) == NULL){
-    if((ofxi_bc = fopen("xi_bc.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-    
-  if((ofxi1 = fopen("xi1.dat","r+")) == NULL){
-    if((ofxi1 = fopen("xi1.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1); 
-     
-    }	
-  }
-  if((ofxi_bc1 = fopen("xi_bc1.dat","r+")) == NULL){
-    if((ofxi_bc1 = fopen("xi_bc1.dat","w+")) == NULL){
-      printf("File could not be opened\n");
-      exit(1);
-    }	
-  }
-    
+
   setobs = 0.05;//0.30; //set random obstacle density
   //double setsigma = 0.000;//1.0E-2;//3E-3;//1.5E-1;//1.5E-3;//0.25;//0.3;//0.5/10;//0.7;//0.002;//0.001;//1.0;//0.04;//0.005;//1.0;//0.01; //2.3E-3;  //set stress
   //double sigstep = 0.00;//1.0E-2;//0.0002; //set stress increment
@@ -4448,6 +4434,10 @@ int main(void)
     
   
 
+    ofxi = fopen_rw("xi.dat");
+    ofxi_bc = fopen_rw("xi_bc.dat");
+    ofxi1 = fopen_rw("xi1.dat");
+    ofxi_bc1 = fopen_rw("xi_bc1.dat");
   
     if(choice==2){
       fread(xi,sizeof(double),sizexi,ofxi);

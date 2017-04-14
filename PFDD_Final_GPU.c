@@ -373,7 +373,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 	} /*if fk2 */
 	for(ka=0;ka<NS;ka++){
 	  for(kb=0;kb<NSV;kb++){
-	    float B = 0.; // FIXME, why not double?
+	    D5(BB, k1,k2,k3,ka,kb) = 0.;
 	    for (m=0; m<ND; m++) {
 	      for (n=0; n<ND; n++) {
 		for (u=0; u<ND; u++) {
@@ -383,15 +383,15 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 		    //int kbm = (kb)/NS1;
 		    //int kbs = kb%NS1;
 		    if (kb < NS) {
-		      B += A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
+		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
 		    } else {
-		      B += A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v];
+		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v];
 		    }
 		  }
 		}
 	      }
 	    }
-	    D5(BB, k1,k2,k3,ka,kb) = B / mu;
+	    D5(BB, k1,k2,k3,ka,kb) /= mu;
 	  } /*kb*/
 	}/* ka*/
       }/*k3*/

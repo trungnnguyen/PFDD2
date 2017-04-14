@@ -2600,24 +2600,9 @@ void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[N
   int na, nas, i;
   double lC11, lC12,lC44, lS11,lS12,lS44;
 	
-  if (MT==1) {
-    printf("This is an isotropic material.\n");
-  } else if (MT==2) {
-    printf("This is a cubic material.\n");
-  } else {
-    printf("Material type defined incorrectly. Please select an integer up to 2.\n");
-    exit(1);
-  }
-
-  // FIXME, C11 probably should be changed in place, or earlier
-  double C11 = mc->C11;
-  if (MT==1) {	//isotropic material
-    C11 = 2. * mc->C44 + mc->C12; 
-  }
-  
   for(na=0;na<NMAT;na++){	
     if(na==0){  //should NOT change this part if material 0 is reference material
-      lC11=C11;
+      lC11=mc->C11;
       lC12=mc->C12;
       lC44=mc->C44;
       C[na][0] = lC11;
@@ -4311,18 +4296,19 @@ int main(void)
   slipdirection[1] = 0.0;
   slipdirection[2] = sqrt(2)/2.;
   checkpass = 1; //mark: check whether the dislocation has enough energy to pass interface
-	
-  setMat( Cm,  Sm,  b2, dslip2, &mc, b, dslip);  //set elastic constants, b2, dslip2 for different materials
 
-  if(MT==1){	//isotropic material
-    mc.C11 = 2.0*mc.C44+mc.C12;  
-    printf("This is an isotropic material.\n");}
-  else if(MT==2) printf("This is a cubic material.\n");  //cubic material
-  else{
+  if (MT == 1) {
+    mc.C11 = 2. * mc.C44 + mc.C12;  
+    printf("This is an isotropic material.\n");
+  } else if (MT == 2) {
+    printf("This is a cubic material.\n");
+  } else {
     printf("Material type defined incorrectly. Please select an integer up to 2.\n");
     exit(1);
   }
     
+  setMat( Cm,  Sm,  b2, dslip2, &mc, b, dslip);  //set elastic constants, b2, dslip2 for different materials
+
     
   mu = mc.C44;//mc.C44-(2.0*mc.C44+mc.C12-mc.C11)/5.0;
   //double ll = mc.C12;//mc.C12-(2.0*mc.C44+mc.C12-mc.C11)/5.0;

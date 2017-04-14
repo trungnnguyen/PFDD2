@@ -322,7 +322,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
   // double young = mu*(3*ll+2*mu)/(ll+mu);
   // double xnu = young/2.0/mu-1.0;
   
-  double mu = mc->C44;
+  double mu = mc->C44, mu_inv = 1. / mu;
   double ll = mc->C12;
   double mup = mc->C11 - mc->C12 - 2*mc->C44;
   
@@ -378,20 +378,15 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 	      for (n=0; n<ND; n++) {
 		for (u=0; u<ND; u++) {
 		  for (v=0; v<ND; v++) {
-		    //int kam = (ka)/NS1;
-		    //int kas = ka%NS1;
-		    //int kbm = (kb)/NS1;
-		    //int kbs = kb%NS1;
 		    if (kb < NS) {
-		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
+		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v] * mu_inv;
 		    } else {
-		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v];
+		      D5(BB, k1,k2,k3,ka,kb) += A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v] * mu_inv;
 		    }
 		  }
 		}
 	      }
 	    }
-	    D5(BB, k1,k2,k3,ka,kb) /= mu;
 	  } /*kb*/
 	}/* ka*/
       }/*k3*/

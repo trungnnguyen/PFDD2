@@ -33,6 +33,8 @@ WTime(void)
   return tv.tv_sec + tv.tv_usec / 1e6;
 }
 
+#define sqr(x) ((x) * (x))
+
 #define I5V(i,j,k,m,n) (((((n) * NSV + (m)) * N1 + (i)) * N2 + (j)) * N3 + (k))
 #define I5(i,j,k,m,n)  (((((n) * NS  + (m)) * N1 + (i)) * N2 + (j)) * N3 + (k))
 #define I4(i,j,k,m)   I5(i,j,k,m,0)
@@ -3642,7 +3644,6 @@ void calculateD4int(double a_f, double a_s, double Cm[NMAT][3], double theta1[NM
 void interfacevolv(double * xi, double * penetrationstress, double D00, double D01, double D10, double D11,double lam1,double lam2,double stressthreshold,int *checkpass,int border,int ppoint_x, int ppoint_y, int ppoint_z, double C44, double a_s, double a_f, double * penetrationstress2, int *it_checkEbarrier,FILE * ofcheckEbarrier)
 {
   int is_p0,is_p1,is_r0,is_r1;
-  int na0,na1;
   int k,y;
   double xi0_ave[N2], xi0_r[N2];//only valid for N2=2
   double stressthreshold_final[N2];
@@ -3680,28 +3681,28 @@ void interfacevolv(double * xi, double * penetrationstress, double D00, double D
   for (y=0; y<N2; y++) {// only valid for N2=2
     if (xi0_ave[y] >=1.0) {
       if (penetrationstress[y] >= stressthreshold_final[y]) {
-	na0 = 2*I4(ppoint_x, y, ppoint_z, is_p0);
-	na1 = 2*I4(ppoint_x, y, ppoint_z, is_p1);
-	xi[na1] = (xi[na0]+xi[2*(ppoint_z+y*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)])*lam2-xi[2*(ppoint_z+1+(y)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
-	(*checkpass) = 0;
+	XI(ppoint_x, y, ppoint_x, is_p1, 0) =
+	  (XI(ppoint_x, y, ppoint_z, is_p0, 0) + XI(ppoint_x, y, ppoint_z, is_r0, 0))*lam2
+	  -XI(ppoint_x, y, ppoint_z+1, is_r1, 0);
+	*checkpass = 0;
 	printf("in interfacevolv: pass at y = %d!\n",y);
       } else {
 	if ((*checkpass)==1) {
-	  na0 = 2*(ppoint_z+y*N3+ppoint_x*N3*N2+is_p0*N1*N2*N3);
-	  na1 = 2*(ppoint_z+1+(y)*N3+ppoint_x*N3*N2+is_p1*N1*N2*N3);
-	  xi[na1] = (xi[na0]+xi[2*(ppoint_z+y*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)])*lam1-xi[2*(ppoint_z+1+(y)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
+	  XI(ppoint_x, y, ppoint_z+1, is_p1, 0) =
+	    (XI(ppoint_x, y, ppoint_z, is_p0, 0) + XI(ppoint_x, y, ppoint_z, is_r0, 0))*lam1
+	    -XI(ppoint_x, y, ppoint_z+1, is_r1, 0);
 	  for (k = ppoint_z+2; k<N3; k++) {
-	    na1 = 2*(k+(y)*N3+ppoint_x*N3*N2+is_p1*N1*N2*N3); //mark: right now for xi1 in material 1,isa=2=is_p1 and i=N1/2=ppoint_x
-	    xi[na1] = 0.0;
+	    //mark: right now for xi1 in material 1,isa=2=is_p1 and i=N1/2=ppoint_x
+	    XI(ppoint_x, y, k, is_p1, 0) = 0.0;
 	  }
 	  printf("in interfacevolv: not pass at y = %d:(\n",y);
 	}
       }
             
       if ((*checkpass) == 0) {
-	na0 = 2*(ppoint_z+y*N3+ppoint_x*N3*N2+is_p0*N1*N2*N3);
-	na1 = 2*(ppoint_z+1+(y)*N3+ppoint_x*N3*N2+is_p1*N1*N2*N3);
-	xi[na1] = (xi[na0]+xi[2*(ppoint_z+y*N3+(ppoint_x)*N3*N2+is_r0*N1*N2*N3)])*lam2-xi[2*(ppoint_z+1+(y)*N3+(ppoint_x)*N3*N2+is_r1*N1*N2*N3)];
+	XI(ppoint_x, y, ppoint_z+1, is_p1, 0) =
+	  (XI(ppoint_x, y, ppoint_z, is_p0, 0) + XI(ppoint_x, y, ppoint_z, is_r0, 0))*lam2
+	  -XI(ppoint_x, y, ppoint_z+1, is_r1, 0);
 	printf("in interfacevolv: pass! And leave a residual! at y = %d\n",y);
       }
     }
@@ -3709,8 +3710,8 @@ void interfacevolv(double * xi, double * penetrationstress, double D00, double D
         
     if ((*checkpass)==1) {
       for (k = ppoint_z+2; k<N3; k++) {
-	na1 = 2*(k+(y)*N3+ppoint_x*N3*N2+is_p1*N1*N2*N3); //mark: right now for xi1 in material 1,isa=2=is_p1 and i=N1/2=ppoint_x
-	xi[na1] = 0.0;
+	//mark: right now for xi1 in material 1,isa=2=is_p1 and i=N1/2=ppoint_x
+	XI(ppoint_x, y, k, is_p1, 0) = 0.;
       }
       printf("in interfacevolv: not pass :( at y = %d\n",y);
     }
@@ -3725,9 +3726,6 @@ void interfacevolv(double * xi, double * penetrationstress, double D00, double D
   // fprintf(ofcheckEbarrier, "%d   %lf\n",*(it_checkEbarrier),E);
   // *(it_checkEbarrier) = *(it_checkEbarrier) + 1;
   //  }
-    
-    
-  return;
 }
 
 
@@ -3921,7 +3919,7 @@ void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[
 
 float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z, double D00, double D01, double D10, double D11)
 {
-  int j,is,na0,na1,ism;
+  int j,is,ism;
   double xi_0,xi_1;
   float en_Residual;
   en_Residual = 0.0;
@@ -3934,13 +3932,11 @@ float ResidualEnergy(double * xi, double interface_n[ND],int ppoint_x, int ppoin
       ism = (is)/NS1;
       //double iss = is%NS1;
       if (ism==0) {
-	na0 = 2*I4(ppoint_x, j, ppoint_z, is);
-	xi_0 = xi_0 + xi[na0];
+	xi_0 += XI(ppoint_x, j, ppoint_z, is, 0);
                 
       }
       if (ism==1) {
-	na1 = 2*I4(ppoint_x, j, ppoint_z, is);
-	xi_1 = xi_1 + xi[na1];
+	xi_1 += XI(ppoint_x, j, ppoint_z, is, 0);
       }
     }
     en_Residual = en_Residual + fabs(-D11*xi_1*xi_1+(D10+D01)*xi_1*xi_0-D00*xi_0*xi_0);
@@ -3969,7 +3965,7 @@ fopen_rw(const char *filename)
 
 int main(void)
 {
-  int i, j, k, it, it_plastic, itp, itp2, is, na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int i, j, k, it, it_plastic, itp, itp2, is, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
   int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
   int checkvirtual;
@@ -4044,9 +4040,6 @@ int main(void)
   II = malloc((ND)*(ND)*(N1)*(N2)*(N3)*sizeof(double));
   penetrationstress = malloc(N2*sizeof(double));// only valid for N2 = 2
   penetrationstress2 = malloc(N2*sizeof(double));// only valid for N2 = 2
-    
-  
-    
     
 #define REAL 0
 #define IMAG 1
@@ -4235,28 +4228,17 @@ int main(void)
     if(choice==1){
       printf(" Generating initial data\n");
       
-      
-     
-      
       /* #ifdef GPUU
 	 #pragma acc update host(data)
 	 #endif */ 
-    
-    
     
       initial(data, xi, xi_bc, setobs, xi_o,border,ppoint_x,ppoint_y,ppoint_z);
       
       /*#ifdef GPUU
 	#pragma acc update device(data)
 	#endif*/
-     
-    
-     
-      
     }
     
-  
-
     ofxi = fopen_rw("xi.dat");
     ofxi_bc = fopen_rw("xi_bc.dat");
     ofxi1 = fopen_rw("xi1.dat");
@@ -4272,23 +4254,15 @@ int main(void)
 	for(i=0;i<N1;i++){
 	  for(j=0;j<N2;j++){
 	    for(k=0;k<N3;k++){
-	      na0 = 2*I4(i, j, k, is);
-	      data[na0  ] = xi[na0  ];
-	      data[na0+1] = xi[na0+1];
+	      DATA(i,j,k, is, 0) = XI(i,j,k, is, 0);
+	      DATA(i,j,k, is, 1) = XI(i,j,k, is, 1);
 	    }
 	  }
 	}
       }							
     }
     
-    
- 
-  
-    
-    
     setq(q);
-    
-   
     
     printf("start time step \n");
     /* time step */
@@ -4297,10 +4271,6 @@ int main(void)
       test_energy[i] = 0;
       test_strain[i] = 0;
     }
-    
-    
-  
-    
     
     int * testplastic;    //test for plasticevolv
     testplastic =  malloc(plastic_max*sizeof(int));
@@ -4389,20 +4359,12 @@ int main(void)
 	  vflag=0;
 
 	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
 #ifdef USE_CUFFT
 #pragma acc data copy(data[0:2*N1*N2*N3*NSV])
 #pragma acc host_data use_device(data)
 #endif
 	  fft_forward(data, NSV);
 	    
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT		  
-  
 	  for (i=0; i < 2*N1*N2*N3*NSV; i++) {
 	    data2[i] = 0.;
 	  }
@@ -4415,13 +4377,12 @@ int main(void)
 	      for(i=0;i<N1;i++){
 		for(j=0;j<N2;j++){
 		  for(k=0;k<N3;k++){
-		    na0 = 2*I4(i, j, k, isb);
 		    if (isa < NS){
-		      C4(data2, i,j,k, isa, 0) += data[na0  ] * BB(i,j,k, isa,isb);
-		      C4(data2, i,j,k, isa, 1) += data[na0+1] * BB(i,j,k, isa,isb);
+		      DATA2(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * BB(i,j,k, isa,isb);
+		      DATA2(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * BB(i,j,k, isa,isb);
 		      if (isb < NS){
-			C4(datag, i,j,k, isa, 0) += data[na0  ] * GG(i,j,k, isa,isb);
-			C4(datag, i,j,k, isa, 1) += data[na0+1] * GG(i,j,k, isa,isb);
+			DATAG(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * GG(i,j,k, isa,isb);
+			DATAG(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * GG(i,j,k, isa,isb);
 		      }
 		    }
 		  }
@@ -4431,35 +4392,12 @@ int main(void)
 	  }
           
           
-          
-          
-          
-	 
-          
-          
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
 #ifdef USE_CUFFT
 #pragma acc data copy(datag[0:2*N1*N2*N3*NS])
 #pragma acc host_data use_device(datag)
 #endif
 	  fft_backward(datag, NS);
 	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
           
 	  /*strain & stress calculation*/
 	  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
@@ -4474,7 +4412,6 @@ int main(void)
 		for(k1=0;k1<N1;k1++){
 		  for(k2=0;k2<N2;k2++){
 		    for (k3=0;k3<N3;k3++){
-		      na0 = 2*(k3+(k2)*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
 		      aveps[i][j] += DATAEPS(k1,k2,k3,i,j, 0)/N1/N2/N3;		//aveps only appears here to get total average strain
 		    }
 		  }
@@ -4485,13 +4422,11 @@ int main(void)
             
 	    fprintf(of4,"zone   I = %d \n", N3);
 	    for (k1=0;k1<N1;k1++){
-	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
 	      fprintf(of4,"%d %lf \n",k1,DATAEPS(k1,N2/2,N3/2,2,2, 0));
 	    }
 	    fprintf(of6,"zone   I = %d \n", N3);
 	    for (k1=0;k1<N1;k1++){
-	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
-	      fprintf(of6,"%d %lf \n",k1,sigmav[na0]);
+	      fprintf(of6,"%d %lf \n", k1, SIGMAV(k1,N2/2,N3/2, 2,2, 0));
 	    }
 	  }
           
@@ -4503,9 +4438,8 @@ int main(void)
 	    for(i=0;i<N1;i++){
 	      for(j=0;j<N2;j++){
 		for(k=0;k<N3;k++){
-		  int xleft, xright, yleft, yright, zleft, zright,dx,naxright,naxleft,nayright,nayleft;
+		  int xleft, xright, yleft, yright, zleft, zright,dx;
 #if 0 // avoid warning
-		  int nazright,nazleft;
 		  double dxi_x, dxi_y, dxi_z;
 		  double e1[ND], e2[ND];
 		  e1[0]=-1.0/sqrt(2.0);
@@ -4529,23 +4463,16 @@ int main(void)
 		  if(yright>=N2){yright += -N2;}
 		  if(zright>=N2){zright += -N3;}
 		  for(is=0;is<NS;is++){
-		    // na0 = 2*I4(i, j, k, is);
-		    naxright = 2*I4(xright, j, k, is);
-		    naxleft  = 2*I4(xleft, j, k, is);
-		    nayright = 2*I4(i, yright, k, is);
-		    nayleft  = 2*I4(i, yleft, k, is);
-#if 0 // avoid warning
-		    nazright = 2*I4(i, j, zright, is);
-		    nazleft = 2*I4(i, j, zleft, is);
-#endif
 		    ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 		    if(ir<(double)((N1/4-1)*(N1/4-1))){
 #if 0 // avoid warning
-		      dxi_x=(xi[naxright]-xi[naxleft])/dx;
-		      dxi_y=(xi[nayright]-xi[nayleft])/dx;
-		      dxi_z=(xi[nazright]-xi[nazleft])/dx;
+		      dxi_x = (XI(xright,j,k, is, 0) - XI(xleft,j,k, is, 0))/dx;
+		      dxi_y = (XI(i,yright,k, is, 0) - XI(i,yleft,k, is, 0))/dx;
+		      dxi_z = (XI(i,j,zright, is, 0) - XI(i,j,zleft, is, 0))/dx;
 #endif
-		      rho2[is] += sqrt((xi[naxright]-xi[naxleft])*(xi[naxright]-xi[naxleft])/(dx*dx)+(xi[nayright]-xi[nayleft])*(xi[nayright]-xi[nayleft])/(dx*dx))*(gs*gs)/size3/gs;
+		      rho2[is] += sqrt(sqr(XI(xright,j,k, is, 0) - XI(xleft,j,k, is, 0)) / sqr(dx) +
+				       sqr(XI(i,yright,k, is, 0) - XI(i,yleft,k, is, 0)) / sqr(dx))
+			*sqr(gs)/size3/gs;
 		    }
 		  }
 		}
@@ -4590,9 +4517,8 @@ int main(void)
 	    for (i=0; i<N1; i++) {
 	      for (j=0; j<N2; j++) {
 		for (k=0; k<N3; k++) {
-		  na0 = 2*I4(i, j, k, isa);
-		  data[na0  ] = xi[na0  ];
-		  data[na0+1] = xi[na0+1];
+		  DATA(i,j,k, isa, 0) = XI(i,j,k, isa, 0);
+		  DATA(i,j,k, isa, 1) = XI(i,j,k, isa, 1);
 		}
 	      }
 	    }
@@ -4617,9 +4543,8 @@ int main(void)
 		for (i=0; i<N1; i++) {
 		  for (j=0; j<N2; j++) {
 		    for (k=0; k<N3; k++) {
-		      na0 = 2*I4(i, j, k, isa);
-		      data[na0  ] = xi[na0  ];
-		      data[na0+1] = xi[na0+1];
+		      DATA(i,j,k, isa, 0) = XI(i,j,k, isa, 0);
+		      DATA(i,j,k, isa, 1) = XI(i,j,k, isa, 1);
 		    }
 		  }
 		}
@@ -4627,12 +4552,6 @@ int main(void)
 	      if (checkpevolv) {
 		// FFT on data
 		
-		
-		
-		
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
 
 #ifdef USE_CUFFT
 #pragma acc data copy(data[0:2*N1*N2*N3*NSV])
@@ -4640,17 +4559,6 @@ int main(void)
 #endif
 		fft_forward(data, NSV);
 	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT			
-		
-		
-		
-		
-		
-		
-		
-		
 		//initialize data2 and datag
 		for (i = 0; i < 2*N1*N2*N3*NSV; i++) {
 		  data2[i] = 0.;
@@ -4664,17 +4572,16 @@ int main(void)
 		    for(i=0;i<N1;i++){
 		      for(j=0;j<N2;j++){
 			for(k=0;k<N3;k++){
-			  na0 = 2*I4(i, j, k, isb);
 			  if(isa < NS){
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * BB(i,j,k, isa,isb);
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * BB(i,j,k, isa,isb);
+			    DATA2(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * BB(i,j,k, isa,isb);
+			    DATA2(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * BB(i,j,k, isa,isb);
 			    if(isb<NS){
-			      C4(datag, i,j,k, isa, 0) += data[na0  ] * GG(i,j,k, isa,isb);
-			      C4(datag, i,j,k, isa, 1) += data[na0+1] * GG(i,j,k, isa,isb);
+			      DATAG(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * GG(i,j,k, isa,isb);
+			      DATAG(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * GG(i,j,k, isa,isb);
 			    }
 			  } else {
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[I5V(i, j, k, isb, isa-NS)];
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[I5V(i, j, k, isb, isa-NS)];
+			    DATA2(i,j,k, isa, 0) += DATA(i,j,k, isb, 0) * DD[I5V(i, j, k, isb, isa-NS)];
+			    DATA2(i,j,k, isa, 1) += DATA(i,j,k, isb, 1) * DD[I5V(i, j, k, isb, isa-NS)];
 			  }
 			}
 		      }
@@ -4683,18 +4590,7 @@ int main(void)
 		}
 		
 		
-		
 		//inverse FFT on data2 and datag
-		 
-		  
-		  
-		  
-		  
-		  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
 
 #ifdef USE_CUFFT
 #pragma acc data copy(data2[0:2*N1*N2*N3*NS])
@@ -4707,18 +4603,6 @@ int main(void)
 #endif
 		fft_backward(datag, NS);	/* inverse FFT*/  
   
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-		//**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT    
-		  
-		  
-		  
-		   
-		
-		
-		
-		
-		
 		if (1) {//checkpass==1
 		  energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint_x,ppoint_y,ppoint_z);
 		  energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
@@ -4760,8 +4644,7 @@ int main(void)
 		    } else{
 		      is = 2;
 		    }
-		    na0 = 2*(k+i*N2*N3+is*N1*N2*N3);
-		    fprintf(ofpfout,"%d   %d   %lf\n",k,i,xi[na0]);
+		    fprintf(ofpfout,"%d   %d   %lf\n",k,i,XI(i,0,k,is, 0));
 		  }
 		}
 	      }

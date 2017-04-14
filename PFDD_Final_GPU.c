@@ -2501,12 +2501,13 @@ void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[N
   }
 }
 
-float Imatrix(double * II, double * xi, double KK[NMAT][6][6], const struct material *mc,
-	      int * xi_o, float energy_in2,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
+float Imatrix(double *II, double *xi, double KK[NMAT][6][6], const struct material *mc,
+	      int *xi_o, double interface_n[ND], int ppoint_x, int ppoint_y, int ppoint_z)
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
 
+  float energy_in2 = 0.;
   int i,j,k,l,k1,k2,k3, naij, nao;
   //double u, v, S11, S12, S44;
   //double c[ND][ND][ND][ND], ds[NMAT][ND][ND][ND][ND];
@@ -4357,13 +4358,12 @@ int main(void)
 	}
 	energy_intotal = 0.0;
 	energy_in =0.0;
-	energy_in2 = 0.0;
 	energy_in3 = 0.0;
 	energy_in4 = 0.0;
 	strain_average = 0.0;
           
 	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,interface_n,ppoint_x,ppoint_y,ppoint_z);
 	vflag=0;
 	  
 #ifdef USE_CUFFT

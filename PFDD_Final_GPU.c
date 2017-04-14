@@ -638,7 +638,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
   }/*k1*/	
 }
 
-float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *xi, int nsize, double sigma[N1][N2][N3][ND][ND], double S11, double S12, double S44, double mu,float energy_in3,float *energy_in4, float *strain_average,int border,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
+float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *xi, int nsize, double sigma[N1][N2][N3][ND][ND], double S11, double S12, double S44, double mu,float energy_in3,float *energy_in4, float *strain_average,int border,double interface_n[ND], int ppoint[3])
 {
   
   int i,j,k,l,is,k1,k2,k3,u,v;
@@ -704,14 +704,14 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
         
 	for (i=0; i<ND; i++) {
 	  for (j=0; j<ND; j++) {
-	    if (fabs(interface_n[0]*(k1-ppoint_x) + interface_n[1]*(k2-ppoint_y) + interface_n[2]*(k3-ppoint_z))<=1.0&&(k1==ppoint_x)) {
+	    if (fabs(interface_n[0]*(k1-ppoint[0]) + interface_n[1]*(k2-ppoint[1]) + interface_n[2]*(k3-ppoint[2]))<=1.0&&(k1==ppoint[0])) {
 	      //energy_stressTimePf += -avepsd[i][j]*sigma[k1][k2][k3][i][j];
 	      energy_stressTimePf += -(strain_p[i][j]+strain_v[i][j])*(sigma[k1][k2][k3][i][j]);
 	    }
 	    for (k=0; k<ND; k++) {
 	      for (l=0; l<ND; l++) {
 		//mark energy from external applied stress
-		if (fabs(interface_n[0]*(k1-ppoint_x) + interface_n[1]*(k2-ppoint_y) + interface_n[2]*(k3-ppoint_z))<=1.0&&(k1==ppoint_x)) {
+		if (fabs(interface_n[0]*(k1-ppoint[0]) + interface_n[1]*(k2-ppoint[1]) + interface_n[2]*(k3-ppoint[2]))<=1.0&&(k1==ppoint[0])) {
 		  *(energy_in4) += -S[i][j][k][l]*sigma[k1][k2][k3][k][l]*sigma[k1][k2][k3][i][j]*0.5*mu;
 		}
 	      }
@@ -4363,7 +4363,7 @@ int main(void)
 	energy_in4 = 0.0;
 	strain_average = 0.0;
           
-	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],ppoint[2]);
+	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint);
 	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,interface_n,ppoint[0],ppoint[1],ppoint[2]);
 	vflag=0;
 	  
@@ -4613,7 +4613,7 @@ int main(void)
   
 	      if (1) {//checkpass==1
 		energy_in = Energy_calculation(fx,fy,fz,eps,epsv,mc.C11,mc.C12,mc.C44,data,interface_n,ppoint[0],ppoint[1],ppoint[2]);
-		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint[0],ppoint[1],ppoint[2]);
+		energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint);
 		energy_Residual = ResidualEnergy(xi,interface_n,ppoint[0],ppoint[1],ppoint[2],D00,D01,D10,D11);
 		energy_intotal = energy_in+energy_in2+energy_in3+energy_in4+energy_Residual;
 		fprintf(ofcheckEbarrier, "%d   %lf   %lf\n",it_checkEbarrier,fabs(energy_Residual),fabs(energy_intotal));

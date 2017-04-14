@@ -357,7 +357,7 @@ int main(void)
   databeta = array5d_alloc(N1, N2, N3, ND, ND);
   dataeps = array5d_alloc(N1, N2, N3, ND, ND);
   dataepsd = array5d_alloc(N1, N2, N3, ND, ND);
-  datasigma = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
+  datasigma = array5d_alloc(N1, N2, N3, ND, ND);
 
   sigmav = malloc(2*N1*N2*N3*NV*sizeof(float));
   xi = malloc(2*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
@@ -1962,9 +1962,9 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
       }
     }
   }
-  for (i=1; i<2*N1*N2*N3*ND*ND+1; i++){
-    datasigma[i] =0;
-    dataepsd[i-1] = 0.;
+  for (i = 0; i < 2*N1*N2*N3*ND*ND; i++){
+    datasigma[i] = 0.;
+    dataepsd[i] = 0.;
   }
     
   for(is=0;is<NSV;is++){
@@ -1996,10 +1996,10 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	    for (k=0;k<ND;k++){
 	      for (l=0;l<ND;l++){
 		na0 = 2*(k1*N2*N3 + k2*N3 + k3 + k*N1*N2*N3+l*N1*N2*N3*ND);
-		datasigma[na+1] += C[i][j][k][l]*(dataeps[na0]-dataepsd[na0]);
+		datasigma[na] += C[i][j][k][l]*(dataeps[na0]-dataepsd[na0]);
 	      }
 	    }
-	    avesigma[i][j] += datasigma[na+1]/N1/N2/N3;
+	    avesigma[i][j] += datasigma[na]/N1/N2/N3;
 	  }
 	}
       }
@@ -2025,7 +2025,11 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	  na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
                     
 	  if (k2==0) {
-	    fprintf(of5,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",k1,k2,k3,sigmav[na11], sigmav[na12], sigmav[na13],sigmav[na22], sigmav[na23], sigmav[na33],datasigma[na11+1], datasigma[na12+1], datasigma[na13+1],datasigma[na22+1], datasigma[na23+1],datasigma[na33+1]);
+	    fprintf(of5,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",
+		    k1,k2,k3,sigmav[na11], sigmav[na12], sigmav[na13],
+		    sigmav[na22], sigmav[na23], sigmav[na33],
+		    datasigma[na11], datasigma[na12], datasigma[na13],
+		    datasigma[na22], datasigma[na23], datasigma[na33]);
 	  }
 	}
       }

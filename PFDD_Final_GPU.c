@@ -784,9 +784,11 @@ int main(void)
 	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
 	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT		  
   
-	  for (i=1; i<2*N1*N2*N3*NSV+1; i++){
-	    _data2[i-1] = 0;
-	    if(i<2*N1*N2*N3*NS+1) datag[i]=0.0;
+	  for (i=0; i < 2*N1*N2*N3*NSV; i++) {
+	    _data2[i] = 0;
+	  }
+	  for (i=0; i < 2*N1*N2*N3*NS; i++){
+	    datag[i+1]=0.0;
 	  }
           
 	  for(isa=0;isa<NS;isa++){
@@ -1045,9 +1047,11 @@ int main(void)
 		
 		
 		//initialize data2 and datag
-		for (i=1; i<2*N1*N2*N3*NSV+1; i++){
-		  _data2[i-1] = 0;
-		  if(i<2*N1*N2*N3*NS+1) datag[i]=0.0;
+		for (i = 0; i < 2*N1*N2*N3*NSV; i++) {
+		  _data2[i] = 0.;
+		}
+		for (i = 0; i < 2*N1*N2*N3*NS; i++){
+		  datag[i+1] = 0.;
 		}
 		//calculate data2 and datag
 		for(isa=0;isa<NS;isa++){

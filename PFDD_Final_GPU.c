@@ -4025,6 +4025,9 @@ int main(void)
   fx = malloc((N1)*(N2)*(N3)*sizeof(double));
   fy = malloc((N1)*(N2)*(N3)*sizeof(double));
   fz = malloc((N1)*(N2)*(N3)*sizeof(double));
+#ifdef  UGPU
+#pragma acc enter data create(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
+#endif  
   f = malloc((NS)*(N1)*(N2)*(N3)*sizeof(double));
   r = malloc((ND)*sizeof(double));
   BB = malloc((NS)*(NSV)*(N1)*(N2)*(N3)*sizeof(double));
@@ -4193,10 +4196,6 @@ int main(void)
   printf("D00 = %e, D11 = %e, D10 = %e, D01 = %e\n",D00,D11,D10,D01);
   
   printf("Frequencies\n");
-#ifdef  UGPU
-#pragma acc data create(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
-  {
-#endif  
     frec(fx, fy, fz, d1, d2, d3);
     	   
     printf("Set interaction matrix\n");
@@ -4757,6 +4756,9 @@ int main(void)
     free(datasigma);
     free(xi);
     free(xi_sum);
+#ifdef UGPU
+#pragma acc exit data delete(fx[0:N1*N2*N3],fy[0:N1:N2:N3],fz[0:N1*N2*N3])
+#endif 
     free(fx);
     free(fy);
     free(fz);
@@ -4797,9 +4799,6 @@ int main(void)
 
     double now = WTime();
     printf("wall time %fs\n", now - tmstart);
-#ifdef UGPU
-  }//pragma acc data create(fx[0:N1*N2*N3],fy[0:N1:N2:N3],fz[0:N1*N2*N3])
-#endif 
     
   return 0;
 }

@@ -4048,37 +4048,39 @@ calc_strain_stress(float *databeta, float *dataeps, float *dataepsd, float *data
 		   int t_bwvirtualpf, int border, int ppoint[3], double mu,
 		   const struct material *mc)
 {
-  strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
-  if (it==NT-1) {
-    printf("go till here!!!\n");
-  }
+  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))) {
+    strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
+    if (it==NT-1) {
+      printf("go till here!!!\n");
+    }
 
-  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv,
-	 mc->C11, mc->C12, mc->C44, of5, it,itp, avesigma,theta1,
-	 slipdirection,xn,penetrationstress,penetrationstress2,
-	 t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
+    stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv,
+	   mc->C11, mc->C12, mc->C44, of5, it,itp, avesigma,theta1,
+	   slipdirection,xn,penetrationstress,penetrationstress2,
+	   t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
 
-  /*average strain*/
-  for(int i=0;i<ND;i++){
-    for (int j=0;j<ND;j++){
-      for(int k1=0;k1<N1;k1++){
-	for(int k2=0;k2<N2;k2++){
-	  for (int k3=0;k3<N3;k3++){
-	    aveps[i][j] += DATAEPS(k1,k2,k3,i,j, 0)/N1/N2/N3;		//aveps only appears here to get total average strain
+    /*average strain*/
+    for(int i=0;i<ND;i++){
+      for (int j=0;j<ND;j++){
+	for(int k1=0;k1<N1;k1++){
+	  for(int k2=0;k2<N2;k2++){
+	    for (int k3=0;k3<N3;k3++){
+	      aveps[i][j] += DATAEPS(k1,k2,k3,i,j, 0)/N1/N2/N3;		//aveps only appears here to get total average strain
+	    }
 	  }
 	}
+	fprintf(of2,"%e %e ", aveps[i][j],avesigma[i][j]/mu);
       }
-      fprintf(of2,"%e %e ", aveps[i][j],avesigma[i][j]/mu);
     }
-  }
             
-  fprintf(of4,"zone   I = %d \n", N3);
-  for (int k1=0;k1<N1;k1++){
-    fprintf(of4,"%d %lf \n",k1,DATAEPS(k1,N2/2,N3/2,2,2, 0));
-  }
-  fprintf(of6,"zone   I = %d \n", N3);
-  for (int k1=0;k1<N1;k1++){
-    fprintf(of6,"%d %lf \n", k1, SIGMAV(k1,N2/2,N3/2, 2,2, 0));
+    fprintf(of4,"zone   I = %d \n", N3);
+    for (int k1=0;k1<N1;k1++){
+      fprintf(of4,"%d %lf \n",k1,DATAEPS(k1,N2/2,N3/2,2,2, 0));
+    }
+    fprintf(of6,"zone   I = %d \n", N3);
+    for (int k1=0;k1<N1;k1++){
+      fprintf(of6,"%d %lf \n", k1, SIGMAV(k1,N2/2,N3/2, 2,2, 0));
+    }
   }
 }
 
@@ -4456,18 +4458,16 @@ int main(void)
 	fft_backward(datag, NS);
 	  
 	/*strain & stress calculation*/
-	if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))) {
-	  calc_strain_stress(databeta, dataeps, dataepsd, datasigma, data,
-			     sigmav, xi, FF, FFv,
-			     eps, epsv, d1, d2, d3,
-			     size3, of2, of3, of4, of5, of6,
-			     it, itp, avepst,
-			     aveps, avesigma, theta1,
-			     slipdirection, xn,
-			     penetrationstress, penetrationstress2,
-			     t_bwvirtualpf, border, ppoint, mu,
-			     &mc);
-	}
+	calc_strain_stress(databeta, dataeps, dataepsd, datasigma, data,
+			   sigmav, xi, FF, FFv,
+			   eps, epsv, d1, d2, d3,
+			   size3, of2, of3, of4, of5, of6,
+			   it, itp, avepst,
+			   aveps, avesigma, theta1,
+			   slipdirection, xn,
+			   penetrationstress, penetrationstress2,
+			   t_bwvirtualpf, border, ppoint, mu,
+			   &mc);
           
 	if(it >= NT-NTD){
 	  //2nd calculation for rho

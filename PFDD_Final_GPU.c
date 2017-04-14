@@ -2595,38 +2595,21 @@ void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_
 }
 
 void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[NS],
-	    const struct material *mc, double b, double dslip){
-  
-  int na, nas, i;
-  double lC11, lC12,lC44, lS11,lS12,lS44;
-	
-  for(na=0;na<NMAT;na++){	
-    if(na==0){  //should NOT change this part if material 0 is reference material
-      lC11=mc->C11;
-      lC12=mc->C12;
-      lC44=mc->C44;
-      C[na][0] = lC11;
-      C[na][1] = lC12;
-      C[na][2] = lC44;
-      lS11 = 1./3.*(1/(lC11+2*lC12) + 2/(lC11-lC12));
-      lS12 = 1./3.*(1/(lC11+2*lC12) - 1/(lC11-lC12));
-      lS44 = 1/lC44;
-      S[na][0] = lS11;
-      S[na][1] = lS12;
-      S[na][2] = lS44;
-      for(i=0;i<NS1;i++){
-	nas = i+NS1*na;
-	b2[nas] = b;
-	dslip2[nas] = dslip;
-      }
-    }
-    else if(na==1){
+	    const struct material *mc, double b, double dslip)
+{
+  for (int na = 0; na < NMAT; na++){	
+    double lC11, lC12, lC44;
+    if (na == 0) {  //should NOT change this part if material 0 is reference material
+      lC11 = mc->C11;
+      lC12 = mc->C12;
+      lC44 = mc->C44;
+    } else if (na == 1) {
       //   lC11 = 246.5E9; //Ni
       //   lC12 = 147.3E9;
       //   lC44 = 49.6E9;
-      lC11=168.4E9;//Cu
-      lC12=121.4E9;
-      lC44=23.5E9;
+      lC11 = 168.4E9;//Cu
+      lC12 = 121.4E9;
+      lC44 = 23.5E9;
       //lC11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
       //lC12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High92.E9;//Ag_Low
       //lC44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High15.E9;//Ag_Low
@@ -2645,31 +2628,29 @@ void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[N
       //lC11 = 580.E9; //Ir
       //lC12 = 242.E9;
       //lC44 = 169.E9;
-      C[na][0] = lC11;
-      C[na][1] = lC12;
-      C[na][2] = lC44;
-      lS11 = 1./3.*(1/(lC11+2*lC12) + 2/(lC11-lC12));
-      lS12 = 1./3.*(1/(lC11+2*lC12) - 1/(lC11-lC12));
-      lS44 = 1/lC44;
-      S[na][0] = lS11;
-      S[na][1] = lS12;
-      S[na][2] = lS44;
-      for(i=0;i<NS1;i++){
-	nas = i+NS1*na;
-	b2[nas] = b;
-	dslip2[nas] = dslip;
-      }
-    }
-    else{
+    } else {
       printf("Error in setMat. Material set(%d) larger than defined.\n",NMAT);
       exit(1);
     }
     
+    C[na][0] = lC11;
+    C[na][1] = lC12;
+    C[na][2] = lC44;
+    double lS11 = 1./3.*(1/(lC11+2*lC12) + 2/(lC11-lC12));
+    double lS12 = 1./3.*(1/(lC11+2*lC12) - 1/(lC11-lC12));
+    double lS44 = 1/lC44;
+    S[na][0] = lS11;
+    S[na][1] = lS12;
+    S[na][2] = lS44;
+    for (int i = 0; i < NS1; i++) {
+      int nas = i+NS1*na;
+      b2[nas] = b;
+      dslip2[nas] = dslip;
+    }
+
     printf("Material constants for material %d\n",na);
-    printf("C11 = %e, C12 = %e, C44 = %e",lC11,lC12,lC44);
-  } //na
-  
-  return;
+    printf("C11 = %e, C12 = %e, C44 = %e\n", lC11, lC12, lC44);
+  }
 }
 
 float Imatrix(double * II, double * xi, double KK[NMAT][6][6], double C11, double C12, double C44, int * xi_o, float energy_in2,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)

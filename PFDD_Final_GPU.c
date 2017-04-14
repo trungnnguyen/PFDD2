@@ -648,13 +648,10 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 	for(k1=0;k1<N1;k1++){
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
-	      nb = 2*(k3+(k2)*N3+(k1)*N3*N2+(is)*N1*N2*N3);		
 	      if (is<NS) {
-		avepsd[i][j]  += eps[is][i][j] * xi[nb]/nsize;
-                
-	      }		
-	      if (is >=NS){
-		avepsd[i][j] += epsv[is-NS][i][j] * xi[nb]/nsize;
+		avepsd[i][j] += eps[is][i][j]     * C4(xi, k1,k2,k3, is, 0)/nsize;
+	      }	else {
+		avepsd[i][j] += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0)/nsize;
 	      }
 	    }
 	  }
@@ -677,11 +674,9 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 	    strain_p[u][v] = 0.0;
 	    strain_v[u][v] = 0.0;
 	    for (is=0; is<NS; is++) {
-	      nb = 2*(k3+(k2)*N3+(k1)*N3*N2+(is)*N1*N2*N3);
-	      strain_p[u][v] += xi[nb]*eps[is][u][v];
+	      strain_p[u][v] += C4(xi, k1,k2,k3, is, 0)*eps[is][u][v];
 	    }
-	    nbv = 2*(k3+(k2)*N3+(k1)*N3*N2+(NS+v+u*ND)*N1*N2*N3);
-	    strain_v[u][v] = epsv[v+u*ND][u][v]*xi[nbv];
+	    strain_v[u][v] = epsv[v+u*ND][u][v]*C4(xi, k1,k2,k3, NS+v+u*ND, 0);
 	  }
 	}
         
@@ -735,8 +730,7 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 
 void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
 {
-  int i,j,is,k1,k2,k3,na0,na,nb;
-  int na11, na12,na13,na21, na22, na23, na31, na32, na33;
+  int i,j,is,k1,k2,k3;
   
   for (i=0; i < 2*N1*N2*N3*ND*ND; i++){
     databeta[i] = 0.;
@@ -750,17 +744,12 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	for(k1=0;k1<N1;k1++){
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
-	      na0 = 2*(k1*N2*N3 + k2*N3 + k3 + is*N1*N2*N3);
-	      na = 2*(k1*N2*N3 + k2*N3 + k3 + i*N1*N2*N3+j*N1*N2*N3*ND);
 	      if(is<NS){
-		nb = k3+(k2)*N3+(k1)*N2*N3+(is)*N1*N2*N3+i*N1*N2*N3*NS+j*N1*N2*N3*NS*ND;
-		databeta[na  ] += data[na0  ] * FF[nb];
-		databeta[na+1] += data[na0+1] * FF[nb];
-	      }
-	      else{
-		nb = k3+(k2)*N3+(k1)*N2*N3+(is-NS)*N1*N2*N3+i*N1*N2*N3*NV+j*N1*N2*N3*NV*ND;
-		databeta[na  ] += data[na0  ] * FFv[nb];
-		databeta[na+1] += data[na0+1] * FFv[nb];
+		C4(databeta, k1,k2,k3, i + j*ND, 0) += C4(data, k1,k2,k3, is, 0) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+		C4(databeta, k1,k2,k3, i + j*ND, 1) += C4(data, k1,k2,k3, is, 1) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+	      } else {
+		C4(databeta, k1,k2,k3, i + j*ND, 0) += C4(data, k1,k2,k3, is, 0) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
+		C4(databeta, k1,k2,k3, i + j*ND, 1) += C4(data, k1,k2,k3, is, 1) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
 	      }
 	    }
 	  }
@@ -769,38 +758,11 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
     }
   }
     
-    
-    
-    
-   
-    
-          
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-
 #ifdef USE_CUFFT
 #pragma acc data copy(databeta[0:2*N1*N2*N3*ND*ND])
 #pragma acc host_data use_device(databeta)
 #endif
   fft_backward(databeta, ND*ND);	/* inverse FFT for strain*/
-	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	 
-  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT      
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
   for (i = 0; i < 2*N1*N2*N3*ND*ND; i++){
     databeta[i] = databeta[i] / (N1*N2*N3);
@@ -812,8 +774,7 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
       for(k1=0;k1<N1;k1++){
 	for(k2=0;k2<N2;k2++){
 	  for (k3=0;k3<N3;k3++){	    
-	    na0 = 2*(k3+k2*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
-	    databeta[na0] += avepst[k1][k2][k3][i][j];
+	    C4(databeta, k1,k2,k3, i + j*ND, 0) += avepst[k1][k2][k3][i][j];
 	  }
 	}
       }
@@ -825,10 +786,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
       for(k1=0;k1<N1;k1++){
 	for(k2=0;k2<N2;k2++){
 	  for (k3=0;k3<N3;k3++){
-	    na0 = 2*(k3+k2*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
-	    na = 2*(k3+k2*N3+(k1)*N2*N3+j*N1*N2*N3+i*N1*N2*N3*ND);
-	    dataeps[na0  ] = (databeta[na0  ] + databeta[na  ])/2;
-	    dataeps[na0+1] = (databeta[na0+1] + databeta[na+1])/2;
+	    C4(dataeps, k1,k2,k3, i + j*ND, 0) = (C4(databeta, k1,k2,k3, i + j*ND, 0) + C4(databeta, k1,k2,k3, j + i*ND, 0)) / 2.;
+	    C4(dataeps, k1,k2,k3, i + j*ND, 1) = (C4(databeta, k1,k2,k3, i + j*ND, 1) + C4(databeta, k1,k2,k3, j + i*ND, 1)) / 2.;
 	  }
 	}
       }
@@ -842,21 +801,10 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
     for(k1=0;k1<N1;k1++){
       for(k2=0;k2<N2;k2++){
 	for(k3=0;k3<N3;k3++){
-	  na0 = 2*(k3+k2*N3+k1*N2*N3);  // +i*N1*N2*N3+j*N1*N2*N3*ND);
-	  na11 = na0 + 2*(0*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  na12 = na0 + 2*(0*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na13 = na0 + 2*(0*N1*N2*N3+2*N1*N2*N3*ND) ;
-	  na21 = na0 + 2*(1*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  na22 = na0 + 2*(1*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na23 = na0 + 2*(1*N1*N2*N3+2*N1*N2*N3*ND) ;
-	  na31 = na0 + 2*(2*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  na32 = na0 + 2*(2*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
-					
 	  fprintf(of3,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf \n",k1,k2,k3,
-		  dataeps[na11], dataeps[na12], dataeps[na13],
-		  dataeps[na21], dataeps[na22], dataeps[na23],
-		  dataeps[na31], dataeps[na32], dataeps[na33]);
+		  C4(dataeps, k1,k2,k3, 0 + 0*ND, 0), C4(dataeps, k1,k2,k3, 0 + 1*ND, 0), C4(dataeps, k1,k2,k3, 0 + 2*ND, 0),
+		  C4(dataeps, k1,k2,k3, 1 + 0*ND, 0), C4(dataeps, k1,k2,k3, 1 + 1*ND, 0), C4(dataeps, k1,k2,k3, 1 + 2*ND, 0),
+		  C4(dataeps, k1,k2,k3, 2 + 0*ND, 0), C4(dataeps, k1,k2,k3, 2 + 1*ND, 0), C4(dataeps, k1,k2,k3, 2 + 2*ND, 0));
 	}
       }
     }

@@ -835,7 +835,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,k1,k2,k3,na0,y;
+  int i,j,k,l,m,k1,k2,k3,y;
   int is;
   double C[ND][ND][ND][ND];
   double mu, mup, ll;
@@ -938,22 +938,24 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
     
   if ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1)) {
     for (y=0; y<N2; y++) {//only valid for N2 = 2
-      na0 = 2*(ppoint_z+y*N3+ppoint_x*N2*N3);
       penetrationstress[y] = 0.0;
       penetrationstress2[y] = 0.0;
       for (i=0; i<ND; i++) {
 	for (j=0; j<ND; j++) {
-	  penetrationstress[y] += sigmav[na0+2*(i*N1*N2*N3+j*N1*N2*N3*ND)]*resolve[i][j];//mark: resolve shear stress in stress and calculateD4interface
+	  penetrationstress[y] += SIGMAV(ppoint_x,y,ppoint_z,i,j, 0)*resolve[i][j];//mark: resolve shear stress in stress and calculateD4interface
 	}
       }
-      penetrationstress[y] = sigmav[na0+2*(0*N1*N2*N3+1*N1*N2*N3*ND)];// for edge, b=z=slip direction, m=x, l=y, resolve shear stress should be sigma_13
-      penetrationstress2[y] = sigmav[2*(ppoint_z+1+y*N3+ppoint_x*N2*N3)+2*(0*N1*N2*N3+1*N1*N2*N3*ND)];
+      penetrationstress[y]  = SIGMAV(ppoint_x,y,ppoint_z,0,1, 0);// for edge, b=z=slip direction, m=x, l=y, resolve shear stress should be sigma_13
+      penetrationstress2[y] = SIGMAV(ppoint_x,y,ppoint_z,0,1, 0);
             
       //mark: for ppointx-1, penetrationstress = 0.7*(ppointz-1) + 0.3*(ppointz), penetrationstress2 = ppoint_z+2
       //mark: for ppointx-2, penetrationstress = 0.9*(ppointz-1) + 0.1*(ppointz)
             
       printf("Calculated from resolved process penetrationstress = %lf and penetrationstress2 = %lf at x = %d, y = %d, z = %d\n",penetrationstress[y],penetrationstress2[y],ppoint_x,y,ppoint_z);
-      printf("check neighbor: ppointz+2 = %lf and ppoint+3 = %lf and ppoint-1 = %lf\n",sigmav[2*(ppoint_z+2+y*N3+ppoint_x*N2*N3)+2*(0*N1*N2*N3+1*N1*N2*N3*ND)],sigmav[2*(ppoint_z+3+y*N3+ppoint_x*N2*N3)+2*(0*N1*N2*N3+1*N1*N2*N3*ND)],sigmav[2*(ppoint_z-1+y*N3+ppoint_x*N2*N3)+2*(0*N1*N2*N3+1*N1*N2*N3*ND)]);
+      printf("check neighbor: ppointz+2 = %lf and ppoint+3 = %lf and ppoint-1 = %lf\n",
+	     SIGMAV(ppoint_x,y,ppoint_z+2,0,1, 0),
+	     SIGMAV(ppoint_x,y,ppoint_z+3,0,1, 0),
+	     SIGMAV(ppoint_x,y,ppoint_z-1,0,1, 0));
     }
         
   }
@@ -963,46 +965,41 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 
 void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_o)
 {
-  int ir, na0, na1,nad1,nad2, nao, is, i, j, k;
+  int ir, nao, is, i, j, k;
   
   Rv=(N1/6)*(N1/6);
   for(is=0;is<NSV;is++)  {
     for(i=0;i<N1;i++)	{	
       for(j=0;j<N2;j++) {
 	for(k=0;k<N3;k++)	{				
-	  na0 = 2*I4(i, j, k, is);
-	  //int na = 2*I3(i, j, k);
 	  nao = I3(i, j, k);
-	  na1 = na0+1;
-	  nad1 = na0+1;
-	  nad2 = na0+2;
 	  if (is>=NS){		  
-	    xi[na0] = 0.0;
-	    xi[na1] = 0.0;
-	    xi_bc[na0] = 1.0;
-	    xi_bc[na1] = 1.0;
+	    C4(xi, i,j,k,is, 0) = 0.0;
+	    C4(xi, i,j,k,is, 1) = 0.0;
+	    C4(xi_bc, i,j,k,is, 0) = 1.0;
+	    C4(xi_bc, i,j,k,is, 1) = 1.0;
 	    
 	    ir = (i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2)+(k-N3/2)*(k-N3/2);
 	    if(ir<=Rv){
-	      xi[na0]=0.005;
-	      xi[na1] = 0.0;
-	      xi_bc[na0]= 0.0;
-	      xi_bc[na1] = 0.0;
+	      C4(xi, i,j,k,is, 0) = 0.005;
+	      C4(xi, i,j,k,is, 1) = 0.0;
+	      C4(xi_bc, i,j,k,is, 0) = 0.0;
+	      C4(xi_bc, i,j,k,is, 1) = 0.0;
 	      if(is == NS) xi_o[nao] = -1;
 	    }								 
 	    
-	    data[nad1] = xi[na0];
-	    data[nad2] = xi[na1];
+	    C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
+	    C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
 	  }
 	  if (is<NS){		  
 	    ir = (i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2)+(k-N3/2)*(k-N3/2);
 	    if(ir<=Rv){
-	      xi[na0]=0.0;
-	      xi[na1] = 0.0;
-	      xi_bc[na0]= 1.0;
-	      xi_bc[na1] = 1.0;
-	      data[nad1] = xi[na0];
-	      data[nad2] = xi[na1];
+	      C4(xi, i,j,k,is, 0) = 0.0;
+	      C4(xi, i,j,k,is, 1) = 0.0;
+	      C4(xi_bc, i,j,k,is, 0) = 1.0;
+	      C4(xi_bc, i,j,k,is, 1) = 1.0;
+	      C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
+	      C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
 	    }								 
 	    
 	  }
@@ -1010,14 +1007,12 @@ void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_
       }
     }
   }
-  
-  return;
 }
 
 void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o)
 {
   
-  int na0, na1,nad1,nad2, nao, is, i, j, k;
+  int nao, is, i, j, k;
   double ir, R;
   
   R = (double)(N1/4.0*N1/4.0);
@@ -1026,41 +1021,35 @@ void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o)
     for(i=0;i<N1;i++)  	{	
       for(j=0;j<N2;j++)	{
 	for(k=0;k<N3;k++)  {				
-	  na0 = 2*I4(i, j, k, is);
-	  //int na = 2*I3(i, j, k, is);
 	  nao = I3(i, j, k);
-	  na1 = na0+1;
-	  nad1 = na0+1;
-	  nad2 = na0+2;
 	  ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 	  if (is>=NS){		  
-	    xi[na0] = 0.0;
-	    xi[na1] = 0.0;
-	    xi_bc[na0] = 1.0;
-	    xi_bc[na1] = 1.0;
+	    C4(xi, i,j,k,is, 0) = 0.0;
+	    C4(xi, i,j,k,is, 1) = 0.0;
+	    C4(xi_bc, i,j,k,is, 0) = 1.0;
+	    C4(xi_bc, i,j,k,is, 1) = 1.0;
 	    if(ir >= R){
-	      xi[na0] = 0.005;
-	      xi[na1] = 0.0;
-	      xi_bc[na0] = 0.0;
-	      xi_bc[na1] = 0.0;
+	      C4(xi, i,j,k,is, 0) = 0.005;
+	      C4(xi, i,j,k,is, 1) = 0.0;
+	      C4(xi_bc, i,j,k,is, 0) = 0.0;
+	      C4(xi_bc, i,j,k,is, 1) = 0.0;
 	      if(is == NS) xi_o[nao] = -1;
 	    }
-	    data[nad1] = xi[na0];
-	    data[nad2] = xi[na1];
+	    C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
+	    C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
 	  }
 	  if(is<NS){
 	    if(ir >= R){
-	      xi_bc[na0] = 1.0;
-	      xi_bc[na1] = 1.0;
-	      xi[na0] = 0.0;
-	      data[nad1] = xi[na0];
+	      C4(xi_bc, i,j,k,is, 0) = 1.0;
+	      C4(xi_bc, i,j,k,is, 1) = 1.0;
+	      C4(xi, i,j,k,is, 0) = 0.;
+	      C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
 	    }
 	  }
 	}
       }
     }
   }
-  return;
 }
 
 void in_virtual_flat(float *data,double *xi,double *xi_bc, int * xi_o)

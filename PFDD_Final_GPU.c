@@ -256,7 +256,7 @@ float maximum(float a[9]);
 
 int main(void)
 {
-  int i, j, k, it, it_plastic, itp, itp2, is, nb, na, nf[4],na0, na1, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, na1, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
   int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
   int checkvirtual;
@@ -657,7 +657,6 @@ int main(void)
 	  for(j=0;j<N2;j++){
 	    for(k=0;k<N3;k++){
 	      na0 = 2*I4(i, j, k, is);
-	      na = 2*I3(i,j,k);
 	      na1 = na0+1;
 	      nad1 = na0+1;
 	      nad2 = na0+2;
@@ -804,7 +803,6 @@ int main(void)
 		for(j=0;j<N2;j++){
 		  for(k=0;k<N3;k++){
 		    na0 = 2*I4(i, j, k, isb);
-		    na =  2*I4(i, j, k, isa);
 		    if(isa<NS){
 		      na1 = na0+1;
 		      nad1 = na0+1;
@@ -813,8 +811,8 @@ int main(void)
 		      C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
 		      C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 		      if(isb<NS){
-			_datag[na  ] += data[nad1] * GG[nb];
-			_datag[na+1] += data[nad2] * GG[nb];
+			C4(_datag, i,j,k, isa, 0) += data[nad1] * GG[nb];
+			C4(_datag, i,j,k, isa, 1) += data[nad2] * GG[nb];
 		      }
 		    }
 		  }
@@ -1067,7 +1065,6 @@ int main(void)
 		      for(j=0;j<N2;j++){
 			for(k=0;k<N3;k++){
 			  na0 = 2*I4(i, j, k, isb);
-			  na  = 2*I4(i, j, k, isa);
 			  if(isa<NS){
 			    na1 = na0+1;
 			    nad1 = na0+1;
@@ -1076,8 +1073,8 @@ int main(void)
 			    C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
 			    C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 			    if(isb<NS){
-			      _datag[na  ] += data[nad1] * GG[nb];
-			      _datag[na+1] += data[nad2] * GG[nb];
+			      C4(_datag, i,j,k, isa, 0) += data[nad1] * GG[nb];
+			      C4(_datag, i,j,k, isa, 1) += data[nad2] * GG[nb];
 			    }
 			  }
 			  if(isa >= NS ){
@@ -4703,8 +4700,8 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * 
 	  //int nad2 = na0+2;
 	  if(xi_bc[na0]==0){//evolve bulk phase field
 	    if(0){	//does not apply gradient term
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+_datag[na0]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 1)/nsize + _datag[na0]/nsize);
+	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+C4(_datag, i,j,k, isa, 0)/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 1)/nsize + C4(_datag, i,j,k, isa, 0)/nsize);
 	    }
 	    else{
 	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/

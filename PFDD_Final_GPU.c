@@ -47,11 +47,13 @@ WTime(void)
 #define DATAEPS(k1,k2,k3,i,j, c)    C4(dataeps  , k1,k2,k3, i + j*ND, c)
 #define DATAEPSD(k1,k2,k3,i,j, c)   C4(dataepsd , k1,k2,k3, i + j*ND, c)
 #define DATASIGMA(k1,k2,k3,i,j, c)  C4(datasigma, k1,k2,k3, i + j*ND, c)
+#define SIGMAV(k1,k2,k3,i,j, c)     C4(sigmav   , k1,k2,k3, i + j*ND, c)
 
 #define FF(k1,k2,k3,ka,i,j)  D4(FF , k1,k2,k3, ka + i*NS  + j*NS*ND)
 #define FFv(k1,k2,k3,ka,i,j) D4(FFv, k1,k2,k3, ka + i*NV  + j*NV*ND)
 #define DD(k1,k2,k3,ka,i,j)  D4(DD , k1,k2,k3, ka + i*NSV + j*NSV*ND)
 
+#define BB(k1,k2,k3,ka,kb)   D5(BB , k1,k2,k3, ka, kb)
 #define GG(k1,k2,k3,ka,kb)   D5(GG , k1,k2,k3, ka, kb)
 
 float *
@@ -358,7 +360,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 	//double fk4 = fk2*fk2;
 	for(ka=0;ka<NS;ka++){
 	  for(kb=0;kb<NSV;kb++){
-	    D5(BB, k1,k2,k3,ka,kb) = 0.;
+	    BB(k1,k2,k3,ka,kb) = 0.;
 	  }
 	}
 	if(fk2>0){
@@ -834,7 +836,6 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
   int i,j,k,l,m,k1,k2,k3,na0,y;
-  int na11, na12,na13, na22, na23, na33;
   int is;
   double C[ND][ND][ND][ND];
   double mu, mup, ll;
@@ -922,21 +923,11 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
     for(k1=0;k1<N1;k1++){
       for(k2=0;k2<N2;k2++){
 	for(k3=0;k3<N3;k3++){
-	  na0 = 2*(k3+k2*N3+k1*N2*N3);
-	  na11 = na0 + 2*(0*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  na12 = na0 + 2*(0*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na13 = na0 + 2*(0*N1*N2*N3+2*N1*N2*N3*ND) ;
-	  //int na21 = na0 + 2*(1*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  na22 = na0 + 2*(1*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na23 = na0 + 2*(1*N1*N2*N3+2*N1*N2*N3*ND) ;
-	  //int na31 = na0 + 2*(2*N1*N2*N3+0*N1*N2*N3*ND) ;
-	  //int na32 = na0 + 2*(2*N1*N2*N3+1*N1*N2*N3*ND) ;
-	  na33 = na0 + 2*(2*N1*N2*N3+2*N1*N2*N3*ND) ;
-                    
 	  if (k2==0) {
 	    fprintf(of5,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n",
-		    k1,k2,k3,sigmav[na11], sigmav[na12], sigmav[na13],
-		    sigmav[na22], sigmav[na23], sigmav[na33],
+		    k1,k2,k3,
+		    SIGMAV(k1,k2,k3,0,0, 0), SIGMAV(k1,k2,k3,0,1, 0), SIGMAV(k1,k2,k3,0,2, 0),
+		    SIGMAV(k1,k2,k3,1,1, 0), SIGMAV(k1,k2,k3,1,2, 0), SIGMAV(k1,k2,k3,2,2, 0),
 		    DATASIGMA(k1,k2,k3,0,0, 0), DATASIGMA(k1,k2,k3,0,1, 0), DATASIGMA(k1,k2,k3,0,2, 0), 
 		    DATASIGMA(k1,k2,k3,1,1, 0), DATASIGMA(k1,k2,k3,1,2, 0), DATASIGMA(k1,k2,k3,2,2, 0));
 	  }
@@ -1462,7 +1453,7 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
 
 void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
-  int isa, isb, i, j, k, na0, nas, na1, nb, u,v, naij, nao, indm[2];
+  int isa, isb, i, j, k, na0, nas, na1, u,v, naij, nao, indm[2];
   float sigr, sigi,dE,dE_imag;
   dE=0.0;
   dE_imag = 0.0;
@@ -1474,24 +1465,23 @@ void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double
      } */
   //printf("virtual data2\n");
   //int itt = itp*NT+it;
-  for(isa=0;isa<NSV;isa++)
-    {
-      for(isb=0;isb<NSV;isb++)
-	{
-	  for(i=0;i<N1;i++)
-	    for(j=0;j<N2;j++)
-	      for(k=0;k<N3;k++)
-		{
-		  na0 = 2*I4(i, j, k, isb);
-		  if(isa >= NS )
-		    {
-		      nb = I5V(i, j, k, isb, isa-NS);
-		      C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[nb];
-		      C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[nb];
-		    }
-		}
+  for(isa=0;isa<NSV;isa++) {
+    for(isb=0;isb<NSV;isb++) {
+
+      for(i=0;i<N1;i++) {
+	for(j=0;j<N2;j++) {
+	  for(k=0;k<N3;k++) {
+	    na0 = 2*I4(i, j, k, isb);
+	    if(isa >= NS) {
+	      C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[I5V(i, j, k, isb, isa-NS)];
+	      C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[I5V(i, j, k, isb, isa-NS)];
+	    }
+	  }
 	}
+      }
+      
     }
+  }
 
 	
   //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT	  
@@ -4050,7 +4040,7 @@ fopen_rw(const char *filename)
 
 int main(void)
 {
-  int i, j, k, it, it_plastic, itp, itp2, is, nb, na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int i, j, k, it, it_plastic, itp, itp2, is, na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
   int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
   int checkvirtual;
@@ -4497,13 +4487,12 @@ int main(void)
 		for(j=0;j<N2;j++){
 		  for(k=0;k<N3;k++){
 		    na0 = 2*I4(i, j, k, isb);
-		    if(isa<NS){
-		      nb = I5(i, j, k, isa, isb);
-		      C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
-		      C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
-		      if(isb<NS){
-			C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
-			C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
+		    if (isa < NS){
+		      C4(data2, i,j,k, isa, 0) += data[na0  ] * BB(i,j,k, isa,isb);
+		      C4(data2, i,j,k, isa, 1) += data[na0+1] * BB(i,j,k, isa,isb);
+		      if (isb < NS){
+			C4(datag, i,j,k, isa, 0) += data[na0  ] * GG(i,j,k, isa,isb);
+			C4(datag, i,j,k, isa, 1) += data[na0+1] * GG(i,j,k, isa,isb);
 		      }
 		    }
 		  }
@@ -4747,19 +4736,16 @@ int main(void)
 		      for(j=0;j<N2;j++){
 			for(k=0;k<N3;k++){
 			  na0 = 2*I4(i, j, k, isb);
-			  if(isa<NS){
-			    nb = I5(i, j, k, isa, isb);
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * BB[nb];
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * BB[nb];
+			  if(isa < NS){
+			    C4(data2, i,j,k, isa, 0) += data[na0  ] * BB(i,j,k, isa,isb);
+			    C4(data2, i,j,k, isa, 1) += data[na0+1] * BB(i,j,k, isa,isb);
 			    if(isb<NS){
-			      C4(datag, i,j,k, isa, 0) += data[na0  ] * GG[nb];
-			      C4(datag, i,j,k, isa, 1) += data[na0+1] * GG[nb];
+			      C4(datag, i,j,k, isa, 0) += data[na0  ] * GG(i,j,k, isa,isb);
+			      C4(datag, i,j,k, isa, 1) += data[na0+1] * GG(i,j,k, isa,isb);
 			    }
-			  }
-			  if(isa >= NS ){
-			    nb = I5V(i, j, k, isb, isa-NS);
-			    C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[nb];
-			    C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[nb];
+			  } else {
+			    C4(data2, i,j,k, isa, 0) += data[na0  ] * DD[I5V(i, j, k, isb, isa-NS)];
+			    C4(data2, i,j,k, isa, 1) += data[na0+1] * DD[I5V(i, j, k, isb, isa-NS)];
 			  }
 			}
 		      }

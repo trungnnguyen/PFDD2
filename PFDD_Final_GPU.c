@@ -4035,7 +4035,18 @@ calc_data2_datag(float *data2, float *datag, float *data, double *BB, double *GG
     }
   }
 }
-    
+
+static void
+calc_strain_stress(float *databeta, float *dataeps, float *data, double *FF, double *FFv,
+		   double epsv[NV][ND][ND], double d1, double d2, double d3,
+		   int size3, FILE *of3, int it, int itp, double avepst[N1][N2][N3][ND][ND])
+{
+  strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
+  if (it==NT-1) {
+    printf("go till here!!!\n");
+  }
+}
+
 int main(void)
 {
   int i, j, k, it, it_plastic, itp, itp2, is, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
@@ -4409,13 +4420,10 @@ int main(void)
 #endif
 	fft_backward(datag, NS);
 	  
-          
 	/*strain & stress calculation*/
-	if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
-	  strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
-	  if (it==NT-1) {
-	    printf("go till here!!!\n");
-	  }
+	if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))) {
+	  calc_strain_stress(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3,
+			     size3, of3, it, itp, avepst);
 	  stress(dataepsd, datasigma, dataeps, sigmav, xi, eps, epsv, mc.C11, mc.C12, mc.C44, of5, it,itp, avesigma,theta1,slipdirection,xn,penetrationstress,penetrationstress2,t_bwvirtualpf,border,ppoint[0],ppoint[1],ppoint[2]);
 	  /*average strain*/
 	  for(i=0;i<ND;i++){

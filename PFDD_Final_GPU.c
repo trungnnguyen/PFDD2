@@ -2501,7 +2501,8 @@ void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[N
   }
 }
 
-float Imatrix(double * II, double * xi, double KK[NMAT][6][6], double C11, double C12, double C44, int * xi_o, float energy_in2,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
+float Imatrix(double * II, double * xi, double KK[NMAT][6][6], const struct material *mc,
+	      int * xi_o, float energy_in2,double interface_n[ND],int ppoint_x, int ppoint_y, int ppoint_z)
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
@@ -2510,7 +2511,7 @@ float Imatrix(double * II, double * xi, double KK[NMAT][6][6], double C11, doubl
   //double u, v, S11, S12, S44;
   //double c[ND][ND][ND][ND], ds[NMAT][ND][ND][ND][ND];
 	
-  double mu = C44;
+  double mu = mc->C44;
   //double ll = C12;
   //double mup = C11-C12-2*C44;
 	
@@ -2576,12 +2577,12 @@ float Imatrix(double * II, double * xi, double KK[NMAT][6][6], double C11, doubl
 	double sig[ND][ND];
 
 	for(k=0;k<6;k++){
-	  if(k == 0) ev[k] = xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 0*N1*N2*N3 + 0*ND*N1*N2*N3)];//virtual strain 11
-	  else if(k == 1) ev[k] = xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 1*N1*N2*N3 + 1*ND*N1*N2*N3)];//virtual strain 22
-	  else if(k == 2) ev[k] = xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 2*N1*N2*N3 + 2*ND*N1*N2*N3)];//virtual strain 33
-	  else if(k == 3) ev[k] = 2.*xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 1*N1*N2*N3 + 2*ND*N1*N2*N3)];//virtual strain 32
-	  else if(k == 4) ev[k] = 2.*xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 2*N1*N2*N3 + 0*ND*N1*N2*N3)];//virtual strain 13
-	  else ev[k] = 2.*xi[2*(k3+k2*N3+k1*N2*N3 + N1*N2*N3*NS+ 0*N1*N2*N3 + 1*ND*N1*N2*N3)]; //k==5//virtual strain 21
+	  if(k == 0) ev[k] = XI(k1,k2,k3, NS+0, 0);
+	  else if(k == 1) ev[k] = XI(k1,k2,k3, NS+1, 1);
+	  else if(k == 2) ev[k] = XI(k1,k2,k3, NS+2, 2);
+	  else if(k == 3) ev[k] = 2.*XI(k1,k2,k3, NS+1, 2);
+	  else if(k == 4) ev[k] = 2.*XI(k1,k2,k3, NS+2, 0);
+	  else            ev[k] = 2.*XI(k1,k2,k3, NS+0, 1);
 	  dE1[k] = 0.0;
 	  //check II difference
 	  //                            printf("%d,%d,%d,ev1 =%e,ev2 =%e,ev3 =%e,ev4 =%e,ev5 =%e,ev6 =%e\n",k1,k2,k3,ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
@@ -2682,6 +2683,7 @@ void frec( double *fx,double *fy,
 	   double *fz, double d1, double d2, double d3)
 {
   int i,j,k, nf;
+  // FIXME, make these 1d arrays
 	
 #ifdef UGPU
 #pragma acc data copyout(fx[0:N1*N2*N3],fy[0:N1*N2*N3],fz[0:N1*N2*N3])
@@ -4361,7 +4363,7 @@ int main(void)
 	strain_average = 0.0;
           
 	energy_in3 = avestrain(avepsd, avepst, eps,epsv, xi, nsize, sigma, S11, S12, S44, mu,energy_in3,&energy_in4, &strain_average,border,interface_n,ppoint_x,ppoint_y,ppoint_z);
-	energy_in2 = Imatrix(II, xi, KK, mc.C11, mc.C12, mc.C44, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
+	energy_in2 = Imatrix(II, xi, KK, &mc, xi_o,energy_in2,interface_n,ppoint_x,ppoint_y,ppoint_z);
 	vflag=0;
 	  
 #ifdef USE_CUFFT

@@ -760,7 +760,7 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 }
 
 
-void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND],int nf[4], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
+void strain(float *databeta, float *dataeps, float *data, double *FF, double *FFv, double epsv[NV][ND][ND], double d1, double d2, double d3, double size3, FILE *of3,int it, int itp, double avepst[N1][N2][N3][ND][ND])
 {
   int i,j,is,k1,k2,k3,na0,na,nb;
   int na11, na12,na13,na21, na22, na23, na31, na32, na33;
@@ -1533,7 +1533,7 @@ void initial(float *data, double * xi, double * xi_bc, double setobs, int * xi_o
   return;
 }
 
-void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, int nf[4], double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
+void virtualevolv(float *data, float *data2, float * sigmav, double * DD, double * xi, double * xi_bc, double CDv, double * sigmal, int Rv, double d1, double d2, double d3, double size3, FILE * of7, int it, int itp, int vflag, double *II, int *xi_o, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6])
 {
   int isa, isb, i, j, k, na0, nas, na1, nb, u,v, naij, nao, indm[2];
   float sigr, sigi,dE,dE_imag;
@@ -4123,7 +4123,7 @@ fopen_rw(const char *filename)
 
 int main(void)
 {
-  int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
+  int i, j, k, it, it_plastic, itp, itp2, is, nb, na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
   int * pcountgamma;
   int t_bwvirtualpf,border,ppoint_x,ppoint_y,ppoint_z,it_checkEbarrier;
   int checkvirtual;
@@ -4289,7 +4289,6 @@ int main(void)
   }
     
   setMat( Cm,  Sm,  b2, dslip2, &mc, b, dslip);  //set elastic constants, b2, dslip2 for different materials
-
     
   mu = mc.C44;//mc.C44-(2.0*mc.C44+mc.C12-mc.C11)/5.0;
   //double ll = mc.C12;//mc.C12-(2.0*mc.C44+mc.C12-mc.C11)/5.0;
@@ -4303,10 +4302,6 @@ int main(void)
     
   //double L = (double)(N3);
 	
-  nf[0]=N1;
-  nf[1]=N1;
-  nf[2]=N2;
-  nf[3]=N3;
   nsize = N1*N2*N3;
     
   d1 = 1;//10.0; //in unis of b so Fequencies are normalized
@@ -4623,7 +4618,7 @@ int main(void)
           
 	  /*strain & stress calculation*/
 	  if ((it == NT-1 && itp == NP-1) || ((it!=0)&&(it%t_bwvirtualpf==0)&&(it!=NT-1))){
-	    strain(databeta, dataeps, data, FF, FFv, epsv, nf, d1, d2, d3, size3, of3,it,itp, avepst);
+	    strain(databeta, dataeps, data, FF, FFv, epsv, d1, d2, d3, size3, of3,it,itp, avepst);
 	    if (it==NT-1) {
 	      printf("go till here!!!\n");
 	    }
@@ -4728,7 +4723,7 @@ int main(void)
 	  if ((it%1==0)||(it==NT-NTD-1)||(it==NT-NTD)) {
 	    fprintf(ofEnergy,"%d    %lf   %lf   %lf   %lf   %lf   %lf\n",it,energy_in,energy_in2,energy_in3,energy_in4,energy_Residual,energy_intotal);
 	  }
-	  virtualevolv(data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, nf, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
+	  virtualevolv(data, data2, sigmav, DD, xi, xi_bc,  CDv, sigmal, Rv, d1, d2, d3, size3, of7, it, itp, vflag, II, xi_o, ZLdC, prop, dS);			/*evolving the virtual strain*/
           
 	  //mark extract xi in final step
 	  if (it==NT-NTD-1) {

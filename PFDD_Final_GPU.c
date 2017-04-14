@@ -56,6 +56,10 @@ WTime(void)
 #define BB(k1,k2,k3,ka,kb)   D5(BB , k1,k2,k3, ka, kb)
 #define GG(k1,k2,k3,ka,kb)   D5(GG , k1,k2,k3, ka, kb)
 
+#define DATA(k1,k2,k3,m, c)  C4(data , k1,k2,k3,m, c)
+#define XI(k1,k2,k3,m, c)    C4(xi   , k1,k2,k3,m, c)
+#define XI_BC(k1,k2,k3,m, c) C4(xi_bc, k1,k2,k3,m, c)
+
 float *
 array4d_alloc(int nx, int ny, int nz, int m)
 {
@@ -662,9 +666,9 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
 	      if (is<NS) {
-		avepsd[i][j] += eps[is][i][j]     * C4(xi, k1,k2,k3, is, 0)/nsize;
+		avepsd[i][j] += eps[is][i][j]     * XI(k1,k2,k3, is, 0)/nsize;
 	      }	else {
-		avepsd[i][j] += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0)/nsize;
+		avepsd[i][j] += epsv[is-NS][i][j] * XI(k1,k2,k3, is, 0)/nsize;
 	      }
 	    }
 	  }
@@ -687,9 +691,9 @@ float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double
 	    strain_p[u][v] = 0.0;
 	    strain_v[u][v] = 0.0;
 	    for (is=0; is<NS; is++) {
-	      strain_p[u][v] += C4(xi, k1,k2,k3, is, 0)*eps[is][u][v];
+	      strain_p[u][v] += XI(k1,k2,k3, is, 0)*eps[is][u][v];
 	    }
-	    strain_v[u][v] = epsv[v+u*ND][u][v]*C4(xi, k1,k2,k3, NS+v+u*ND, 0);
+	    strain_v[u][v] = epsv[v+u*ND][u][v]*XI(k1,k2,k3, NS+v+u*ND, 0);
 	  }
 	}
         
@@ -758,11 +762,11 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
 	      if(is<NS){
-		DATABETA(k1,k2,k3,i,j, 0) += C4(data, k1,k2,k3, is, 0) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
-		DATABETA(k1,k2,k3,i,j, 1) += C4(data, k1,k2,k3, is, 1) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+		DATABETA(k1,k2,k3,i,j, 0) += DATA(k1,k2,k3, is, 0) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+		DATABETA(k1,k2,k3,i,j, 1) += DATA(k1,k2,k3, is, 1) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
 	      } else {
-		DATABETA(k1,k2,k3,i,j, 0) += C4(data, k1,k2,k3, is, 0) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
-		DATABETA(k1,k2,k3,i,j, 1) += C4(data, k1,k2,k3, is, 1) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
+		DATABETA(k1,k2,k3,i,j, 0) += DATA(k1,k2,k3, is, 0) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
+		DATABETA(k1,k2,k3,i,j, 1) += DATA(k1,k2,k3, is, 1) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
 	      }
 	    }
 	  }
@@ -889,9 +893,9 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
 	      if (is < NS) {
-		DATAEPSD(k1,k2,k3,i,j, 0) += eps[is][i][j]     * C4(xi, k1,k2,k3, is, 0);
+		DATAEPSD(k1,k2,k3,i,j, 0) += eps[is][i][j]     * XI(k1,k2,k3, is, 0);
 	      } else {
-		DATAEPSD(k1,k2,k3,i,j, 0) += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0);
+		DATAEPSD(k1,k2,k3,i,j, 0) += epsv[is-NS][i][j] * XI(k1,k2,k3, is, 0);
 	      }
 	    }
 	  }
@@ -974,32 +978,32 @@ void in_virtual_void(int Rv, float * data, double * xi, double * xi_bc, int *xi_
 	for(k=0;k<N3;k++)	{				
 	  nao = I3(i, j, k);
 	  if (is>=NS){		  
-	    C4(xi, i,j,k,is, 0) = 0.0;
-	    C4(xi, i,j,k,is, 1) = 0.0;
-	    C4(xi_bc, i,j,k,is, 0) = 1.0;
-	    C4(xi_bc, i,j,k,is, 1) = 1.0;
+	    XI(i,j,k,is, 0) = 0.0;
+	    XI(i,j,k,is, 1) = 0.0;
+	    XI_BC( i,j,k,is, 0) = 1.0;
+	    XI_BC( i,j,k,is, 1) = 1.0;
 	    
 	    ir = (i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2)+(k-N3/2)*(k-N3/2);
 	    if(ir<=Rv){
-	      C4(xi, i,j,k,is, 0) = 0.005;
-	      C4(xi, i,j,k,is, 1) = 0.0;
-	      C4(xi_bc, i,j,k,is, 0) = 0.0;
-	      C4(xi_bc, i,j,k,is, 1) = 0.0;
+	      XI(i,j,k,is, 0) = 0.005;
+	      XI(i,j,k,is, 1) = 0.0;
+	      XI_BC( i,j,k,is, 0) = 0.0;
+	      XI_BC( i,j,k,is, 1) = 0.0;
 	      if(is == NS) xi_o[nao] = -1;
 	    }								 
 	    
-	    C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
-	    C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
+	    DATA(i,j,k, is, 0) = XI(i,j,k,is, 0);
+	    DATA(i,j,k, is, 1) = XI(i,j,k,is, 1);
 	  }
 	  if (is<NS){		  
 	    ir = (i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2)+(k-N3/2)*(k-N3/2);
 	    if(ir<=Rv){
-	      C4(xi, i,j,k,is, 0) = 0.0;
-	      C4(xi, i,j,k,is, 1) = 0.0;
-	      C4(xi_bc, i,j,k,is, 0) = 1.0;
-	      C4(xi_bc, i,j,k,is, 1) = 1.0;
-	      C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
-	      C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
+	      XI(i,j,k,is, 0) = 0.0;
+	      XI(i,j,k,is, 1) = 0.0;
+	      XI_BC( i,j,k,is, 0) = 1.0;
+	      XI_BC( i,j,k,is, 1) = 1.0;
+	      DATA(i,j,k, is, 0) = XI(i,j,k,is, 0);
+	      DATA(i,j,k, is, 1) = XI(i,j,k,is, 1);
 	    }								 
 	    
 	  }
@@ -1024,26 +1028,26 @@ void in_virtual_cylinder(float *data,double *xi,double *xi_bc, int * xi_o)
 	  nao = I3(i, j, k);
 	  ir = (double)((i-N1/2)*(i-N1/2)+(j-N2/2)*(j-N2/2));
 	  if (is>=NS){		  
-	    C4(xi, i,j,k,is, 0) = 0.0;
-	    C4(xi, i,j,k,is, 1) = 0.0;
-	    C4(xi_bc, i,j,k,is, 0) = 1.0;
-	    C4(xi_bc, i,j,k,is, 1) = 1.0;
+	    XI(i,j,k,is, 0) = 0.0;
+	    XI(i,j,k,is, 1) = 0.0;
+	    XI_BC( i,j,k,is, 0) = 1.0;
+	    XI_BC( i,j,k,is, 1) = 1.0;
 	    if(ir >= R){
-	      C4(xi, i,j,k,is, 0) = 0.005;
-	      C4(xi, i,j,k,is, 1) = 0.0;
-	      C4(xi_bc, i,j,k,is, 0) = 0.0;
-	      C4(xi_bc, i,j,k,is, 1) = 0.0;
+	      XI(i,j,k,is, 0) = 0.005;
+	      XI(i,j,k,is, 1) = 0.0;
+	      XI_BC( i,j,k,is, 0) = 0.0;
+	      XI_BC( i,j,k,is, 1) = 0.0;
 	      if(is == NS) xi_o[nao] = -1;
 	    }
-	    C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
-	    C4(data, i,j,k, is, 1) = C4(xi, i,j,k,is, 1);
+	    DATA(i,j,k, is, 0) = XI(i,j,k,is, 0);
+	    DATA(i,j,k, is, 1) = XI(i,j,k,is, 1);
 	  }
 	  if(is<NS){
 	    if(ir >= R){
-	      C4(xi_bc, i,j,k,is, 0) = 1.0;
-	      C4(xi_bc, i,j,k,is, 1) = 1.0;
-	      C4(xi, i,j,k,is, 0) = 0.;
-	      C4(data, i,j,k, is, 0) = C4(xi, i,j,k,is, 0);
+	      XI_BC( i,j,k,is, 0) = 1.0;
+	      XI_BC( i,j,k,is, 1) = 1.0;
+	      XI(i,j,k,is, 0) = 0.;
+	      DATA(i,j,k, is, 0) = XI(i,j,k,is, 0);
 	    }
 	  }
 	}

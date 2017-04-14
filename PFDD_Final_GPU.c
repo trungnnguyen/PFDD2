@@ -43,6 +43,15 @@ WTime(void)
 #define D4(data, i,j,k,m) (data[I4(i,j,k,m)])
 #define D5(data, i,j,k,m,n) (data[I5(i,j,k,m,n)])
 
+#define DATABETA(k1,k2,k3,i,j, c) C4(databeta, k1,k2,k3, i + j*ND, c)
+#define DATAEPS(k1,k2,k3,i,j, c)  C4(dataeps, k1,k2,k3, i + j*ND, c)
+
+#define FF(k1,k2,k3,ka,i,j)  D4(FF , k1,k2,k3, ka + i*NS  + j*NS*ND)
+#define FFv(k1,k2,k3,ka,i,j) D4(FFv, k1,k2,k3, ka + i*NV  + j*NV*ND)
+#define DD(k1,k2,k3,ka,i,j)  D4(DD , k1,k2,k3, ka + i*NSV + j*NSV*ND)
+
+#define GG(k1,k2,k3,ka,kb)   D5(GG , k1,k2,k3, ka, kb)
+
 float *
 array4d_alloc(int nx, int ny, int nz, int m)
 {
@@ -558,13 +567,13 @@ void Fmatrix(double *FF, double *DD, double *FFv, double *fx, double *fy, double
 	  for (i=0; i<ND; i++) {
 	    for (j=0; j<ND; j++) {										
 	      if (ka<NS) {
-		D4(FF, k1,k2,k3, ka + i*NS + j*NS*ND) = F[ka][i][j];
+		FF(k1,k2,k3,ka,i,j) = F[ka][i][j];
 		/*printf(" in FF %d  %d %d %d %d %d %d %lf \n",ka, nb,k1, k2, k3, i,j,FF[nb]);*/
 	      }
 	      if (ka<NV) {
-		D4(FFv, k1,k2,k3, ka + i*NV + j*NV*ND) = Fv[ka][i][j];
+		FFv(k1,k2,k3,ka,i,j) = Fv[ka][i][j];
 	      }
-	      D4(DD, k1,k2,k3, ka + i*NSV + j*NSV*ND) = D[ka][i][j]/mu;
+	      DD(k1,k2,k3,ka,i,j) = D[ka][i][j]/mu;
 	    }
 	  }
 	}
@@ -603,8 +612,8 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
 		for (k=0; k<ND; k++){
 		  for (l=0; l<ND; l++){
 		    for (m=0; m<ND; m++){
-		      //D5(GG, k1,k2,k3,ka,kb) += beta2*fk[j]*fk[l]*(xb[ka][i]*xb[kb][k]+xb[ka][k]*xb[kb][i]);
-		      D5(GG, k1,k2,k3,ka,kb) += 0.5*beta2*(ep[i][j][k]*ep[i][l][m]*xn[ka][j]*xn[kb][l] +ep[i][j][k]*ep[i][l][m]*xn[kb][j]*xn[ka][l])*fk[k]*fk[m];
+		      //GG(k1,k2,k3,ka,kb) += beta2*fk[j]*fk[l]*(xb[ka][i]*xb[kb][k]+xb[ka][k]*xb[kb][i]);
+		      GG(k1,k2,k3,ka,kb) += 0.5*beta2*(ep[i][j][k]*ep[i][l][m]*xn[ka][j]*xn[kb][l] +ep[i][j][k]*ep[i][l][m]*xn[kb][j]*xn[ka][l])*fk[k]*fk[m];
 		    }
 		  }
 		}
@@ -745,11 +754,11 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
 	      if(is<NS){
-		C4(databeta, k1,k2,k3, i + j*ND, 0) += C4(data, k1,k2,k3, is, 0) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
-		C4(databeta, k1,k2,k3, i + j*ND, 1) += C4(data, k1,k2,k3, is, 1) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+		DATABETA(k1,k2,k3,i,j, 0) += C4(data, k1,k2,k3, is, 0) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
+		DATABETA(k1,k2,k3,i,j, 1) += C4(data, k1,k2,k3, is, 1) * D4(FF, k1,k2,k3, is + i*NS + j*NS*ND);
 	      } else {
-		C4(databeta, k1,k2,k3, i + j*ND, 0) += C4(data, k1,k2,k3, is, 0) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
-		C4(databeta, k1,k2,k3, i + j*ND, 1) += C4(data, k1,k2,k3, is, 1) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
+		DATABETA(k1,k2,k3,i,j, 0) += C4(data, k1,k2,k3, is, 0) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
+		DATABETA(k1,k2,k3,i,j, 1) += C4(data, k1,k2,k3, is, 1) * D4(FFv, k1,k2,k3, is-NS + i*NV + j*NV*ND);
 	      }
 	    }
 	  }
@@ -774,7 +783,7 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
       for(k1=0;k1<N1;k1++){
 	for(k2=0;k2<N2;k2++){
 	  for (k3=0;k3<N3;k3++){	    
-	    C4(databeta, k1,k2,k3, i + j*ND, 0) += avepst[k1][k2][k3][i][j];
+	    DATABETA(k1,k2,k3,i,j, 0) += avepst[k1][k2][k3][i][j];
 	  }
 	}
       }
@@ -786,8 +795,8 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
       for(k1=0;k1<N1;k1++){
 	for(k2=0;k2<N2;k2++){
 	  for (k3=0;k3<N3;k3++){
-	    C4(dataeps, k1,k2,k3, i + j*ND, 0) = (C4(databeta, k1,k2,k3, i + j*ND, 0) + C4(databeta, k1,k2,k3, j + i*ND, 0)) / 2.;
-	    C4(dataeps, k1,k2,k3, i + j*ND, 1) = (C4(databeta, k1,k2,k3, i + j*ND, 1) + C4(databeta, k1,k2,k3, j + i*ND, 1)) / 2.;
+	    DATAEPS(k1,k2,k3,i,j, 0) = (DATABETA(k1,k2,k3,i,j, 0) + DATABETA(k1,k2,k3,j,i, 0)) / 2.;
+	    DATAEPS(k1,k2,k3,i,j, 1) = (DATABETA(k1,k2,k3,i,j, 1) + DATABETA(k1,k2,k3,j,i, 1)) / 2.;
 	  }
 	}
       }
@@ -802,9 +811,9 @@ void strain(float *databeta, float *dataeps, float *data, double *FF, double *FF
       for(k2=0;k2<N2;k2++){
 	for(k3=0;k3<N3;k3++){
 	  fprintf(of3,"%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf \n",k1,k2,k3,
-		  C4(dataeps, k1,k2,k3, 0 + 0*ND, 0), C4(dataeps, k1,k2,k3, 0 + 1*ND, 0), C4(dataeps, k1,k2,k3, 0 + 2*ND, 0),
-		  C4(dataeps, k1,k2,k3, 1 + 0*ND, 0), C4(dataeps, k1,k2,k3, 1 + 1*ND, 0), C4(dataeps, k1,k2,k3, 1 + 2*ND, 0),
-		  C4(dataeps, k1,k2,k3, 2 + 0*ND, 0), C4(dataeps, k1,k2,k3, 2 + 1*ND, 0), C4(dataeps, k1,k2,k3, 2 + 2*ND, 0));
+		  DATAEPS(k1,k2,k3,0,0, 0), DATAEPS(k1,k2,k3,0,1, 0), DATAEPS(k1,k2,k3,0,2, 0),
+		  DATAEPS(k1,k2,k3,1,0, 0), DATAEPS(k1,k2,k3,1,1, 0), DATAEPS(k1,k2,k3,1,2, 0),
+		  DATAEPS(k1,k2,k3,2,0, 0), DATAEPS(k1,k2,k3,2,1, 0), DATAEPS(k1,k2,k3,2,2, 0));
 	}
       }
     }
@@ -822,7 +831,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 {
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,k1,k2,k3,na,nb,na0,y;
+  int i,j,k,l,m,k1,k2,k3,na,na0,y;
   int na11, na12,na13, na22, na23, na33;
   int is;
   double C[ND][ND][ND][ND];
@@ -877,12 +886,11 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	  for(k2=0;k2<N2;k2++){
 	    for(k3=0;k3<N3;k3++){
 	      na = 2*(k1*N2*N3 + k2*N3 + k3 + i*N1*N2*N3+j*N1*N2*N3*ND);
-	      nb = 2*(k3+(k2)*N3+(k1)*N3*N2+(is)*N1*N2*N3);
 	      if (is<NS){
-		dataepsd[na] += eps[is][i][j] * xi[nb];
+		dataepsd[na  ] += eps[is][i][j] * C4(xi, k1,k2,k3, is, 0);
 	      }
 	      if (is >=NS){
-		dataepsd[na] += epsv[is-NS][i][j] * xi[nb];
+		dataepsd[na] += epsv[is-NS][i][j] * C4(xi, k1,k2,k3, is, 0);
 	      }
 	    }
 	  }
@@ -899,7 +907,7 @@ void stress(float *dataepsd, float *datasigma, float *dataeps, float * sigmav,
 	    for (k=0;k<ND;k++){
 	      for (l=0;l<ND;l++){
 		na0 = 2*(k1*N2*N3 + k2*N3 + k3 + k*N1*N2*N3+l*N1*N2*N3*ND);
-		datasigma[na] += C[i][j][k][l]*(dataeps[na0]-dataepsd[na0]);
+		datasigma[na] += C[i][j][k][l]*(DATAEPS(k1,k2,k3,k,l, 0)-dataepsd[na0]);
 	      }
 	    }
 	    avesigma[i][j] += datasigma[na]/N1/N2/N3;
@@ -4551,7 +4559,7 @@ int main(void)
 		  for(k2=0;k2<N2;k2++){
 		    for (k3=0;k3<N3;k3++){
 		      na0 = 2*(k3+(k2)*N3+(k1)*N2*N3+i*N1*N2*N3+j*N1*N2*N3*ND);
-		      aveps[i][j] += dataeps[na0]/N1/N2/N3;		//aveps only appears here to get total average strain
+		      aveps[i][j] += DATAEPS(k1,k2,k3,i,j, 0)/N1/N2/N3;		//aveps only appears here to get total average strain
 		    }
 		  }
 		}
@@ -4562,7 +4570,7 @@ int main(void)
 	    fprintf(of4,"zone   I = %d \n", N3);
 	    for (k1=0;k1<N1;k1++){
 	      na0=2*(N3/2+(N2/2)*N3+k1*N2*N3+2*N1*N2*N3+2*N1*N2*N3*ND);
-	      fprintf(of4,"%d %lf \n",k1,dataeps[na0]);
+	      fprintf(of4,"%d %lf \n",k1,DATAEPS(k1,N2/2,N3/2,2,2, 0));
 	    }
 	    fprintf(of6,"zone   I = %d \n", N3);
 	    for (k1=0;k1<N1;k1++){

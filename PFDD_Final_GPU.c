@@ -39,6 +39,9 @@ WTime(void)
 #define I3(i,j,k)     I4(i,j,k,0)
 
 #define C4(data, i,j,k,m, c) (data[2*I4(i, j, k, m) + c])
+#define D3(data, i,j,k) (data[I3(i, j, k)])
+#define D4(data, i,j,k,m) (data[I4(i,j,k,m)])
+#define D5(data, i,j,k,m,n) (data[I5(i,j,k,m,n)])
 
 float *
 array4d_alloc(int nx, int ny, int nz, int m)
@@ -301,27 +304,30 @@ material_set(struct material *mc)
 	
 }
 
-void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND][ND], double epsv[NV][ND][ND],double d1, double d2,double d3, double C11, double C12, double C44, int * xi_o)
+void Bmatrix (double *BB, double *fx, double *fy, double *fz,
+	      double eps[NS][ND][ND], double epsv[NV][ND][ND],
+	      double d1, double d2,double d3,
+	      const struct material *mc, int *xi_o)
 {
   printf("set B matrix \n");
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,n, u, v, k1,k2,k3,ka,kb, nb, nfreq;
+  int i,j,k,l,m,n, u, v, k1,k2,k3,ka,kb;
   double C[ND][ND][ND][ND];
   float A[ND][ND][ND][ND];
   static float B[NS][NSV][N1][N2][N3];
   float G[ND][ND];
-  double fk[ND], z2[ND];
-  double fk2, kk;
+  double z2[ND];
+  double kk;
   
   // double mu = C44-(2.0*C44+C12-C11)/5.0;
   // double ll = C12-(2.0*C44+C12-C11)/5.0;
   // double young = mu*(3*ll+2*mu)/(ll+mu);
   // double xnu = young/2.0/mu-1.0;
   
-  double mu = C44;
-  double ll = C12;
-  double mup = C11-C12-2*C44;
+  double mu = mc->C44;
+  double ll = mc->C12;
+  double mup = mc->C11 - mc->C12 - 2*mc->C44;
   
   /* set Cijkl*/
   
@@ -342,11 +348,8 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
   for(k1=0;k1<N1;k1++){
     for(k2=0;k2<N2;k2++){
       for(k3=0;k3<N3;k3++){
-	nfreq = k3+(k2)*N3+(k1)*N3*N2;
-	fk[0] = fx[nfreq];
-	fk[1] = fy[nfreq];
-	fk[2] = fz[nfreq];
-	fk2 = fk[0]*fk[0]+fk[1]*fk[1]+fk[2]*fk[2];
+	double fk[3] = { D3(fx, k1,k2,k3), D3(fy, k1,k2,k3), D3(fz, k1,k2,k3) };
+	double fk2 = fk[0]*fk[0] + fk[1]*fk[1] + fk[2]*fk[2];
 	//double fk4 = fk2*fk2;
 	if(fk2>0){
 	  z2[0] = fk[0]*fk[0]/fk2;
@@ -396,29 +399,29 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND]
 		}
 	      }
 	    }
-	    nb = nfreq +(ka)*N1*N2*N3+(kb)*N1*N2*N3*NS;
-	    BB[nb] = B[ka][kb][k1][k2][k3]/mu;
+	    D5(BB, k1,k2,k3,ka,kb) = B[ka][kb][k1][k2][k3] / mu;
 	  } /*kb*/
 	}/* ka*/
       }/*k3*/
     }/*k2*/
   }/*k1*/
-  return;
 }
 
-void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, double *fz, double eps[NS][ND][ND], double epsv[NV][ND][ND], double d1, double d2,double d3, double C11, double C12, double C44, int * xi_o,double theta1[NMAT][ND][ND])
+void Fmatrix(double *FF, double *DD, double *FFv, double *fx, double *fy, double *fz,
+	     double eps[NS][ND][ND], double epsv[NV][ND][ND], double d1, double d2,double d3,
+	     struct material *mc, int *xi_o, double theta1[NMAT][ND][ND])
 {
   printf("set F matrix \n");
 #define 	DELTA(i, j)   ((i==j)?1:0)
 #define		DELTA4(i,j,k,l) (((i==j) && (j==k) && (k==l))?1:0)
-  int i,j,k,l,m,n, u, v, k1,k2,k3,ka, nb, nfreq;
+  int i,j,k,l,m,n, u, v, k1,k2,k3,ka;
   
   static double C[ND][ND][ND][ND];
   static float F[NS][ND][ND], Fv[NV][ND][ND];
   static float D[NSV][ND][ND];
   static float G[ND][ND];
-  static double fk[ND], z2[ND];
-  double ll, mu, mup, fk2, kk;
+  double z2[ND];
+  double ll, mu, mup, kk;
   static float A[ND][ND][ND][ND];
   static double C_rotate[ND][ND][ND][ND];
   
@@ -443,9 +446,9 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
   //	young = mu*(3*ll+2*mu)/(ll+mu);
   //	xnu = young/2.0/mu-1.0;
   
-  mu = C44;
-  ll = C12;
-  mup= C11-C12-2*C44;
+  mu = mc->C44;
+  ll = mc->C12;
+  mup= mc->C11 - mc->C12 - 2*mc->C44;
   
   /* set Cijkl*/
   
@@ -500,11 +503,8 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	    }
 	  }
 	}
-	nfreq = k3+(k2)*N3+(k1)*N3*N2;
-	fk[0] = fx[nfreq];
-	fk[1] = fy[nfreq];
-	fk[2] = fz[nfreq];
-	fk2 = fk[0]*fk[0]+fk[1]*fk[1]+fk[2]*fk[2];
+	double fk[3] = { D3(fx, k1,k2,k3), D3(fy, k1,k2,k3), D3(fz, k1,k2,k3) };
+	double fk2 = fk[0]*fk[0] + fk[1]*fk[1] + fk[2]*fk[2];
 	//double fk4 = fk2*fk2;
 	
 	if(fk2>0) {
@@ -575,16 +575,13 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 	  for (i=0; i<ND; i++) {
 	    for (j=0; j<ND; j++) {										
 	      if (ka<NS) {
-		nb = nfreq +(ka)*N1*N2*N3+i*N1*N2*N3*NS+j*N1*N2*N3*NS*ND;
-		FF[nb] = F[ka][i][j];
+		D4(FF, k1,k2,k3, ka + i*NS + j*NS*ND) = F[ka][i][j];
 		/*printf(" in FF %d  %d %d %d %d %d %d %lf \n",ka, nb,k1, k2, k3, i,j,FF[nb]);*/
 	      }
 	      if (ka<NV) {
-		nb = nfreq +(ka)*N1*N2*N3+i*N1*N2*N3*NV+j*N1*N2*N3*NV*ND;
-		FFv[nb] = Fv[ka][i][j];
+		D4(FFv, k1,k2,k3, ka + i*NV + j*NV*ND) = Fv[ka][i][j];
 	      }
-	      nb = nfreq +(ka)*N1*N2*N3+i*N1*N2*N3*NSV+j*N1*N2*N3*NSV*ND;
-	      DD[nb] = D[ka][i][j]/mu;
+	      D4(DD, k1,k2,k3, ka + i*NSV + j*NSV*ND) = D[ka][i][j]/mu;
 	    }
 	  }
 	}
@@ -599,8 +596,7 @@ void Fmatrix (double *FF, double *DD, double *FFv, double *fx, double *fy, doubl
 void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], double *fx, double *fy, double *fz)
 {
   
-  int i,j,k,l,m,k1,k2,k3,ka,kb,nb,nfreq;
-  double fk[ND];
+  int i,j,k,l,m,k1,k2,k3,ka,kb;
   static double G2[NS][NS][N1][N2][N3];
   int ep[ND][ND][ND];
   
@@ -615,10 +611,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
   for(k1=0;k1<N1;k1++){
     for(k2=0;k2<N2;k2++){
       for(k3=0;k3<N3;k3++){
-	nfreq = k3+(k2)*N3+(k1)*N3*N2;
-	fk[0] = fx[nfreq];
-	fk[1] = fy[nfreq];
-	fk[2] = fz[nfreq];
+	double fk[3] = { D3(fx, k1,k2,k3), D3(fy, k1,k2,k3), D3(fz, k1,k2,k3) };
 	
 	for(ka=0;ka<NS;ka++){
 	  for(kb=0;kb<NS;kb++){
@@ -635,8 +628,7 @@ void Gmatrix (double *GG, double beta2, double xb[NS][ND], double xn[NS][ND], do
 		}
 	      }
 	    }
-	    nb = nfreq +(ka)*N1*N2*N3+(kb)*N1*N2*N3*NS;
-	    GG[nb]=G2[ka][kb][k1][k2][k3];
+	    D5(GG, k1,k2,k3,ka,kb) = G2[ka][kb][k1][k2][k3];
 	  }
 	}
       }/*k3*/
@@ -4364,8 +4356,8 @@ int main(void)
     frec(fx, fy, fz, d1, d2, d3);
     	   
     printf("Set interaction matrix\n");
-    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, mc.C11, mc.C12, mc.C44, xi_o);
-    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3,  mc.C11,  mc.C12,  mc.C44, xi_o,theta1);
+    Bmatrix(BB, fx, fy, fz, eps, epsv, d1,  d2 , d3, &mc, xi_o);
+    Fmatrix(FF, DD, FFv, fx, fy, fz, eps, epsv, d1,  d2 , d3, &mc, xi_o,theta1);
     printf("HERE WE ARE AFTER CALLING THE FMATRIX BEFORE GMATRIX\n");
     //     getchar();
     Gmatrix (GG, beta2, xb, xn, fx, fy, fz);

@@ -261,7 +261,45 @@ void Indv2mat(int i, int ind[2]);
 float minimum(float a[9]);
 float maximum(float a[9]);
 
-/* functions*/ 
+// ======================================================================
+// material
+
+struct material {
+  double C11, C12, C44;
+};
+
+static void
+material_set(struct material *mc)
+{
+  /* Set material constants for material 0 */
+  //mc->C11 = 246.5E9; //Ni
+  //mc->C12 = 147.3E9;
+  //mc->C44 = 49.6E9;
+  mc->C11=168.4E9;//Cu
+  mc->C12=121.4E9;
+  mc->C44=23.5E9;
+    
+    
+  //mc->C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
+  //mc->C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
+  //mc->C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
+  //mc->C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
+  //mc->C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
+  //mc->C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
+  //mc->C11=107.3E9;//Al
+  //mc->C12=60.9E9;
+  //mc->C44=23.2E9;
+  //mc->C11 = 346.7E9; //Pt
+  //mc->C12 = 250.7E9;
+  //mc->C44 = 48.E9;
+  //mc->C11 = 227.1E9; //Pd
+  //mc->C12 = 176.E9;
+  //mc->C44 = 25.55E9;
+  //mc->C11 = 580.E9; //Ir
+  //mc->C12 = 242.E9;
+  //mc->C44 = 169.E9;
+	
+}
 
 void Bmatrix (double *BB, double *fx, double *fy, double *fz, double eps[NS][ND][ND], double epsv[NV][ND][ND],double d1, double d2,double d3, double C11, double C12, double C44, int * xi_o)
 {
@@ -2556,29 +2594,32 @@ void setDorient(int *xi_o,double *d_f, double *d_s,int border, double interface_
   return;
 }
 
-void setMat(double C[NMAT][3], double S[NMAT][3],double b2[NS],double dslip2[NS], double C11, double C12, double C44, double b, double dslip){
+void setMat(double C[NMAT][3], double S[NMAT][3], double b2[NS], double dslip2[NS],
+	    const struct material *mc, double b, double dslip){
   
   int na, nas, i;
   double lC11, lC12,lC44, lS11,lS12,lS44;
 	
-  if(MT==1) printf("This is an isotropic material.\n");  //isotropic material
-  else if(MT==2) printf("This is a cubic material.\n");  //cubic material
-  else{
+  if (MT==1) {
+    printf("This is an isotropic material.\n");
+  } else if (MT==2) {
+    printf("This is a cubic material.\n");
+  } else {
     printf("Material type defined incorrectly. Please select an integer up to 2.\n");
     exit(1);
   }
-  
-  
-  if(MT==1){	//isotropic material
-    C11 = 2.0*C44+C12; 
+
+  // FIXME, C11 probably should be changed in place, or earlier
+  double C11 = mc->C11;
+  if (MT==1) {	//isotropic material
+    C11 = 2. * mc->C44 + mc->C12; 
   }
-  
   
   for(na=0;na<NMAT;na++){	
     if(na==0){  //should NOT change this part if material 0 is reference material
       lC11=C11;
-      lC12=C12;
-      lC44=C44;
+      lC12=mc->C12;
+      lC44=mc->C44;
       C[na][0] = lC11;
       C[na][1] = lC12;
       C[na][2] = lC44;
@@ -4114,45 +4155,6 @@ fopen_rw(const char *filename)
   exit(1);
 }
 
-// material
-
-struct material {
-  double C11, C12, C44;
-};
-
-static void
-material_set(struct material *mc)
-{
-  /* Set material constants for material 0 */
-  //mc->C11 = 246.5E9; //Ni
-  //mc->C12 = 147.3E9;
-  //mc->C44 = 49.6E9;
-  mc->C11=168.4E9;//Cu
-  mc->C12=121.4E9;
-  mc->C44=23.5E9;
-    
-    
-  //mc->C11=124.0E9;//Ag122.E9;//Ag_Low124.E9;//Ag_High
-  //mc->C12=93.4E9;//Ag92.E9;//Ag_Low93.4E9;//Ag_High
-  //mc->C44=15.3E9;//Ag15.E9;//Ag_Low15.3E9;//Ag_High
-  //mc->C11=192.9E9;//Au186.E9;//Au_Low191.E9;//Au_High
-  //mc->C12=163.8E9;//Au157.E9;//Au_Low162.E9;//Au_High
-  //mc->C44=14.55E9;//Au14.5E9;//Au_Low14.5E9;//Au_High
-  //mc->C11=107.3E9;//Al
-  //mc->C12=60.9E9;
-  //mc->C44=23.2E9;
-  //mc->C11 = 346.7E9; //Pt
-  //mc->C12 = 250.7E9;
-  //mc->C44 = 48.E9;
-  //mc->C11 = 227.1E9; //Pd
-  //mc->C12 = 176.E9;
-  //mc->C44 = 25.55E9;
-  //mc->C11 = 580.E9; //Ir
-  //mc->C12 = 242.E9;
-  //mc->C44 = 169.E9;
-	
-}
-
 int main(void)
 {
   int i, j, k, it, it_plastic, itp, itp2, is, nb, nf[4],na0, nsize, k1, k2, k3, vflag, choice,checkpevolv,countgamma,checkpass,plastic_max;
@@ -4310,7 +4312,7 @@ int main(void)
   slipdirection[2] = sqrt(2)/2.;
   checkpass = 1; //mark: check whether the dislocation has enough energy to pass interface
 	
-  setMat( Cm,  Sm,  b2, dslip2, mc.C11, mc.C12, mc.C44, b, dslip);  //set elastic constants, b2, dslip2 for different materials
+  setMat( Cm,  Sm,  b2, dslip2, &mc, b, dslip);  //set elastic constants, b2, dslip2 for different materials
 
   if(MT==1){	//isotropic material
     mc.C11 = 2.0*mc.C44+mc.C12;  

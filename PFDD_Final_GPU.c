@@ -266,7 +266,7 @@ int main(void)
   static double xn[NS][ND], xb[NS][ND], tau[N1][N2][N3][NS], rho2[NS],interface_n[ND],slipdirection[ND];
   double *fx, *fy, *fz, *xi, *xi_sum, *xi_bc, *sigmal, *penetrationstress,*penetrationstress2;
   float *_data, *_data2, *_datag, *_databeta;
-  float *data, *datag, *databeta, *dataeps, *dataepsd, *datasigma, *sigmav;
+  float *data, *databeta, *dataeps, *dataepsd, *datasigma, *sigmav;
   double *f, *r;
   double d1, d2, d3, size3,ir,beta2;
   double C11, C12, C44, S11, S12, S44, CD2[NS], CDv,Asf2[NS],b2[NS],dslip2[NS], b, dslip, mu, gs,a_f,a_s,d_f,d_s, D00, D11,D10,D01,lam1,lam2,stressthreshold;
@@ -349,7 +349,6 @@ int main(void)
   data = _data - 1;
   _data2 = array4d_alloc(N1, N2, N3, NSV);
   _datag = array4d_alloc(N1, N2, N3, NS);
-  datag = _datag - 1;
   _databeta = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3))*sizeof(float));
   databeta = _databeta - 1;
   dataeps = malloc(2*((ND)*(ND)*(N1)*(N2)*(N3)+1)*sizeof(float));
@@ -793,10 +792,10 @@ int main(void)
 	  //**************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT*************This Part exchanges the FFT routines : FOURN,FFTW,CCUFFT		  
   
 	  for (i=0; i < 2*N1*N2*N3*NSV; i++) {
-	    _data2[i] = 0;
+	    _data2[i] = 0.;
 	  }
 	  for (i=0; i < 2*N1*N2*N3*NS; i++){
-	    datag[i+1]=0.0;
+	    _datag[i] = 0.;
 	  }
           
 	  for(isa=0;isa<NS;isa++){
@@ -814,8 +813,8 @@ int main(void)
 		      C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
 		      C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 		      if(isb<NS){
-			datag[na+1] += data[nad1] * GG[nb];
-			datag[na+2] += data[nad2] * GG[nb];
+			_datag[na  ] += data[nad1] * GG[nb];
+			_datag[na+1] += data[nad2] * GG[nb];
 		      }
 		    }
 		  }
@@ -1008,7 +1007,7 @@ int main(void)
 	    printf("evolve plastic then evolve interface\n");
 	    do {
 	      gammalast = gamma;
-	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,_data2,Asf2,tau,dslip2,datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
+	      gamma = plasticevolv(xi_bc,xi,CD2,uq2,_data2,Asf2,tau,dslip2,_datag,data,gamma1,nsize,a_f,a_s,C44,it_plastic);
 	      checkpevolv = plasticconverge(gamma,gammalast,it_plastic,testplastic,pcountgamma);
 	      printf("in evolve plastic:    %d    %d\n",it_plastic, checkpevolv);
 	      it_plastic = it_plastic + 1;
@@ -1059,7 +1058,7 @@ int main(void)
 		  _data2[i] = 0.;
 		}
 		for (i = 0; i < 2*N1*N2*N3*NS; i++){
-		  datag[i+1] = 0.;
+		  _datag[i] = 0.;
 		}
 		//calculate data2 and datag
 		for(isa=0;isa<NS;isa++){
@@ -1077,8 +1076,8 @@ int main(void)
 			    C4(_data2, i,j,k, isa, 0) += data[nad1] * BB[nb];
 			    C4(_data2, i,j,k, isa, 1) += data[nad2] * BB[nb];
 			    if(isb<NS){
-			      datag[na+1] += data[nad1] * GG[nb];
-			      datag[na+2] += data[nad2] * GG[nb];
+			      _datag[na  ] += data[nad1] * GG[nb];
+			      _datag[na+1] += data[nad2] * GG[nb];
 			    }
 			  }
 			  if(isa >= NS ){
@@ -4687,9 +4686,9 @@ return(en);
 }
 
 
-double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * _data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float * datag,float * data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
+double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * _data2,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *_datag,float * data,double * gamma1,int nsize,double a_f, double a_s, double C44, int it_plastic)
 {
-  int isa,is, i, j, k, na0,na1,nad1;
+  int isa,is, i, j, k, na0,na1;
   double gamma;
   gamma = 0.0;
   for(is=0;is<NS;is++){
@@ -4701,12 +4700,11 @@ double plasticevolv(double * xi_bc,double * xi,double CD2[NS],float uq2,float * 
 	for (k=0; k<N3; k++) {
 	  na0 = I4(i,j,k,isa);
 	  na1 = na0+1;
-	  nad1 = na0+1;
 	  //int nad2 = na0+2;
 	  if(xi_bc[na0]==0){//evolve bulk phase field
 	    if(0){	//does not apply gradient term
-	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+datag[nad1]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
-	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 1)/nsize + datag[nad1]/nsize);
+	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]+_datag[na0]/nsize);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/
+	      xi[na1] = xi[na1]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 1)/nsize + _datag[na0]/nsize);
 	    }
 	    else{
 	      xi[na0] = xi[na0]-CD2[isa]*(uq2*C4(_data2, i,j,k, isa, 0)/nsize+Asf2[isa]*pi*sin(2.0*pi*xi[na0])-tau[i][j][k][isa]/dslip2[isa]);      /*(k+1)+(j+1)*10.0+(i+1)*100.0*/

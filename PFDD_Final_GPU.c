@@ -315,8 +315,6 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
   int i,j,k,l,m,n, u, v, k1,k2,k3,ka,kb;
   double C[ND][ND][ND][ND];
   float A[ND][ND][ND][ND];
-  static float B[NS][NSV][N1][N2][N3];
-  double z2[ND];
   double kk;
   
   // double mu = C44-(2.0*C44+C12-C11)/5.0;
@@ -335,7 +333,6 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
       for (k=0; k<ND; k++) {
 	for (m=0; m<ND; m++) {
 	  C[i][j][k][m] = mu * (DELTA(i,k)*DELTA(j,m)+DELTA(i,m)*DELTA(j,k))+ll*DELTA(i,j)*DELTA(k,m)+mup*DELTA4(i,j,k,m);
-	  A[i][j][k][m] = 0.0;
 	}
       }
     }
@@ -350,27 +347,25 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 	double fk2 = fk[0]*fk[0] + fk[1]*fk[1] + fk[2]*fk[2];
 	//double fk4 = fk2*fk2;
 	if(fk2>0){
-	  z2[0] = fk[0]*fk[0]/fk2;
-	  z2[1] = fk[1]*fk[1]/fk2;
-	  z2[2] = fk[2]*fk[2]/fk2;
+	  double z2[3] = { fk[0]*fk[0]/fk2, fk[1]*fk[1]/fk2, fk[2]*fk[2]/fk2 };
 	  kk  = 1.0 + (mu+ll) * (1/(mu+mup*z2[0])*z2[0] + 1/(mu+mup*z2[1])*z2[1] + 1/(mu+mup*z2[2])*z2[2]);
 	  for (m=0; m<ND; m++) {
 	    for (n=0; n<ND; n++) {
 	      for (u=0; u<ND; u++) {
 		for (v=0; v<ND; v++) {
 		  A[m][n][u][v] = 0.0;
-		  for	(i=0; i<ND; i++) {
+		  for (i=0; i<ND; i++) {
 		    for (j=0; j<ND; j++) {
 		      for (k=0; k<ND; k++) {
 			//		G_ki = (2.0 * DELTA(i,k)/fk2-1.0/(1.0-xnu)*fk[i]*fk[k]/fk4)/(2.0*mu);
 			double G_ki = 1/fk2 * (DELTA(i,k)/(mu+mup*z2[k]) - fk[i]*fk[k]/fk2/(mu + mup*z2[i])/(mu + mup*z2[k]) * (mu+ll)/kk);
-			for	(l=0; l<ND; l++) {
-			  A[m][n][u][v] = A[m][n][u][v] - C[k][l][u][v]*C[i][j][m][n]*G_ki*fk[j]*fk[l] ;
+			for (l=0; l<ND; l++) {
+			  A[m][n][u][v] -= C[k][l][u][v]*C[i][j][m][n]*G_ki*fk[j]*fk[l] ;
 			}
 		      }
 		    }
 		  }
-		  A[m][n][u][v] = A[m][n][u][v]+C[m][n][u][v];
+		  A[m][n][u][v] += C[m][n][u][v];
 		}
 	      }
 	    }
@@ -378,7 +373,7 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 	} /*if fk2 */
 	for(ka=0;ka<NS;ka++){
 	  for(kb=0;kb<NSV;kb++){
-	    B[ka][kb][k1][k2][k3] = 0.0;
+	    float B = 0.; // FIXME, why not double?
 	    for (m=0; m<ND; m++) {
 	      for (n=0; n<ND; n++) {
 		for (u=0; u<ND; u++) {
@@ -387,17 +382,16 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 		    //int kas = ka%NS1;
 		    //int kbm = (kb)/NS1;
 		    //int kbs = kb%NS1;
-		    if(kb<NS){
-		      B[ka][kb][k1][k2][k3]= B[ka][kb][k1][k2][k3] + A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
-		    }
-		    if(kb>=NS){
-		      B[ka][kb][k1][k2][k3]= B[ka][kb][k1][k2][k3] + A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v];
+		    if (kb < NS) {
+		      B += A[m][n][u][v]*eps[ka][m][n]*eps[kb][u][v];
+		    } else {
+		      B += A[m][n][u][v]*eps[ka][m][n]*epsv[kb-NS][u][v];
 		    }
 		  }
 		}
 	      }
 	    }
-	    D5(BB, k1,k2,k3,ka,kb) = B[ka][kb][k1][k2][k3] / mu;
+	    D5(BB, k1,k2,k3,ka,kb) = B / mu;
 	  } /*kb*/
 	}/* ka*/
       }/*k3*/

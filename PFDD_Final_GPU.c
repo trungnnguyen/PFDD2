@@ -316,7 +316,6 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
   double C[ND][ND][ND][ND];
   float A[ND][ND][ND][ND];
   static float B[NS][NSV][N1][N2][N3];
-  float G[ND][ND];
   double z2[ND];
   double kk;
   
@@ -333,7 +332,6 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
   
   for (i=0; i<ND; i++) {
     for (j=0; j<ND; j++) {
-      G[i][j] = 0.0;
       for (k=0; k<ND; k++) {
 	for (m=0; m<ND; m++) {
 	  C[i][j][k][m] = mu * (DELTA(i,k)*DELTA(j,m)+DELTA(i,m)*DELTA(j,k))+ll*DELTA(i,j)*DELTA(k,m)+mup*DELTA4(i,j,k,m);
@@ -364,10 +362,10 @@ void Bmatrix (double *BB, double *fx, double *fy, double *fz,
 		  for	(i=0; i<ND; i++) {
 		    for (j=0; j<ND; j++) {
 		      for (k=0; k<ND; k++) {
-			//		G[k][i] = (2.0 * DELTA(i,k)/fk2-1.0/(1.0-xnu)*fk[i]*fk[k]/fk4)/(2.0*mu);
-			G[k][i] = 1/fk2 * (DELTA(i,k)/(mu+mup*z2[k]) - fk[i]*fk[k]/fk2/(mu + mup*z2[i])/(mu + mup*z2[k]) * (mu+ll)/kk);
+			//		G_ki = (2.0 * DELTA(i,k)/fk2-1.0/(1.0-xnu)*fk[i]*fk[k]/fk4)/(2.0*mu);
+			double G_ki = 1/fk2 * (DELTA(i,k)/(mu+mup*z2[k]) - fk[i]*fk[k]/fk2/(mu + mup*z2[i])/(mu + mup*z2[k]) * (mu+ll)/kk);
 			for	(l=0; l<ND; l++) {
-			  A[m][n][u][v] = A[m][n][u][v] - C[k][l][u][v]*C[i][j][m][n]*G[k][i]*fk[j]*fk[l] ;
+			  A[m][n][u][v] = A[m][n][u][v] - C[k][l][u][v]*C[i][j][m][n]*G_ki*fk[j]*fk[l] ;
 			}
 		      }
 		    }

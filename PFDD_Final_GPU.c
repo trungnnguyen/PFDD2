@@ -4128,47 +4128,6 @@ int main(void)
   double theta1[NMAT][ND][ND], Cm[NMAT][3], Sm[NMAT][3], KK[NMAT][6][6], *II, AA[NMAT][ND][ND], dS[NMAT][6][6]; //Cm[0]: C11, Cm[1]: C12, Cm[2]: C44.
   int *xi_o, ZLdC[NMAT][6],prop[NMAT][6];
     
-  void frec (double *, double *, double *, double, double,double);  //frequency subroutine
-  void setfcc(double xn[NS][ND], double xb[NS][ND]);                //set slip systems
-  void set2D(double xn[NS][ND], double xb[NS][ND]);
-  void set3D1sys(double xn[NS][ND], double xb[NS][ND]);
-  void set3D2sys(double xn[NS][ND], double xb[NS][ND]);
-  void set3D4sys(double xn[NS][ND], double xb[NS][ND]);
-  void setq(double q[N1][N2][N3]);
-  void seteps(double eps[NS][ND][ND], double epsv[NV][ND][ND],double xn[NS][ND], double xb[NS][ND],double dslip2[NS], double AA[NMAT][ND][ND],double theta1[NMAT][ND][ND]);
-  void resolSS(double sigma[N1][N2][N3][ND][ND], double tau[N1][N2][N3][NS], double eps[NS][ND][ND], double *, double *, int *);  //Calculate the resolved shear stress
-  void Bmatrix( double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
-		double , double , double , double, double, double, int *); //Interaction matrix
-  void Fmatrix( double *, double *, double *, double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],
-		double , double , double , double, double , double, int *,double theta1[NMAT][ND][ND]); /*needs to be called after function Bmatrix*/
-  float Energy_calculation(double*, double*, double*, double eps[NS][ND][ND], double epsv[NV][ND][ND],double, double, double, float *,double interface_n[ND],int,int ,int);
-  float ResidualEnergy(double *, double interface_n[ND],int, int, int, double, double, double, double);
-  void Gmatrix (double *, double, double xb[NS][ND], double xn[NS][ND], double *, double *, double *);
-  float avestrain(double avepsd[ND][ND], double avepst[N1][N2][N3][ND][ND], double eps[NS][ND][ND], double epsv[NV][ND][ND], double *, int, double sigma[N1][N2][N3][ND][ND], double, double, double, double,float,float *, float *,int,double interface_n[ND],int, int, int);
-  void strain(float *, float *, float *, double *, double *, double epsv[NV][ND][ND], int nf[4], double, double, double, double, FILE *of3,int, int, double avepst[N1][N2][N3][ND][ND]);
-  void stress (float *, float *, float *, float *, double *, double eps[NS][ND][ND], double epsv[NV][ND][ND], double, double, double, FILE *of5, int, int, double avesigma[ND][ND],double theta1[NMAT][ND][ND], double slipdirection[ND], double xn[NS][ND],double *,double *,int,int,int,int,int); /*called after function strain*/
-  void in_virtual_void(int, float *, double *, double *, int *);
-  void in_virtual_cylinder(float *, double *, double *, int *);
-  void in_virtual_flat(float *, double *, double *, int *);
-  void in_virtual_homo(float *, double *, double *);
-  void in_virtual_cylinvoid(int, float *, double *, double *, int *);
-  void in_virtual_epitax(int, float *, double *, double *, int *);
-  void initial(float *, double *, double *, double, int *,int,int,int,int);
-  void virtualevolv(float *, float *, float *, double *, double *, double *, double, double *, int, int nf[4], double, double, double, double, FILE *, int,int, int, double *, int *, int ZLdC[NMAT][6], int prop[NMAT][6], double dS[NMAT][6][6]);
-  double plasticevolv(double *,double *,double CD2[NS],float,float *,double Asf2[NS],double tau[N1][N2][N3][NS],double dslip2[NS],float *, float *,double *,int,double,double,double,int);
-  void interfacevolv(double *, double *, double, double, double, double,double,double,double,int *,int,int,int,int,double, double, double, double * , int *,FILE *);
-  void calculateD4int(double, double, double Cm[NMAT][3], double theta1[NMAT][ND][ND], double xb[NS][ND], double xn[NS][ND], double interface_n[ND],double *, double *, double *, double *,double *,double *,double *);
-  int plasticconverge(double,double,int, int * testplastic, int *);
-  void nrerror(char error_text[]);
- 
-  void setorient(double theta1[NMAT][ND][ND]);
-  void Amatrix(double AA[NMAT][ND][ND], double theta1[NMAT][ND][ND]);
-  void setDorient(int *,double *,double *,int,double interface_n[ND],int,int,int);
-  void setMat(double Cm[NMAT][3], double Sm[NMAT][3], double b2[NS], double dslip2[NS], double , double, double, double, double);
-  void dSmat(double Cm[NMAT][3], double Sm[NMAT][3], double AA[NMAT][ND][ND],  double KK[NMAT][6][6], double dS[NMAT][6][6], int ZLdC[NMAT][6],int prop[NMAT][6],double theta1[NMAT][ND][ND]);
-  float Imatrix(double *, double *, double KK[NMAT][6][6], double, double, double, int *,float,double interface_n[ND],int,int,int);
-  void setstress(double sigma[N1][N2][N3][ND][ND],double a_s, double a_f,double C[NMAT][3],int,int,int,int,double interface_n[ND]);
-    
   FILE *of2, *of3, *of4, *of5, *of6, *of7, *ofrho,*ofxi,*ofxi_bc, *ofxi1, *ofxi_bc1,*ofEnergy,*ofFinalXi_w,*ofpfv, *ofpfout, *ofresidual,*ofcheckEbarrier,*ofzEdensity;
   //    FILE *ofFinalXi;
   
